@@ -31,10 +31,12 @@ func _ready() -> void:
 func _make_leaf() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var vertices := [Vector3(0, 0, 0), Vector3(-0.042, 0.008, 0.075), Vector3(0, 0.018, 0.095), Vector3(0.042, 0.008, 0.075), Vector3(0, 0, 0.185)]
-	for index in [0, 2, 1, 0, 3, 2, 1, 2, 4, 2, 3, 4]:
-		st.add_vertex(vertices[index])
-	st.generate_normals()
+	var edge := [Vector3(0, 0, 0), Vector3(-0.038, 0, 0.04), Vector3(-0.057, 0, 0.10), Vector3(-0.045, 0, 0.17), Vector3(0, -0.004, 0.23), Vector3(0.045, 0, 0.17), Vector3(0.057, 0, 0.10), Vector3(0.038, 0, 0.04)]
+	for i in edge.size():
+		st.set_normal(Vector3.UP)
+		st.add_vertex(Vector3(0, 0.016, 0.105))
+		st.add_vertex(edge[i])
+		st.add_vertex(edge[(i + 1) % edge.size()])
 	return st.commit()
 
 func _tube(st: SurfaceTool, points: Array[Vector3], radius: float, sides: int = 8) -> void:
@@ -59,15 +61,15 @@ func _tube(st: SurfaceTool, points: Array[Vector3], radius: float, sides: int = 
 	for s in range(points.size() - 1):
 		for j in range(sides):
 			var next := (j + 1) % sides
-			for pair in [[s, j], [s, next], [s + 1, j], [s, next], [s + 1, next], [s + 1, j]]:
+			for pair in [[s, j], [s + 1, j], [s, next], [s, next], [s + 1, j], [s + 1, next]]:
 				st.set_normal(normals[pair[0]][pair[1]])
 				st.add_vertex(rings[pair[0]][pair[1]])
 	var end := points.size() - 1
 	for j in sides:
 		st.set_normal((points[end] - points[end - 1]).normalized())
 		st.add_vertex(points[end])
-		st.add_vertex(rings[end][j])
 		st.add_vertex(rings[end][(j + 1) % sides])
+		st.add_vertex(rings[end][j])
 
 func rebuild(state: BonsaiTree) -> void:
 	tree = state
@@ -85,7 +87,7 @@ func rebuild(state: BonsaiTree) -> void:
 		for leaf: Dictionary in b.leaves:
 			var health: float = leaf.health
 			var angle: float = leaf.angle
-			var tilt := -0.25 - (1.0 - health) * 0.9 - maxf(0, 0.3 - tree.moisture)
+			var tilt := -0.20 + sin(angle * 3.0) * 0.35 + (1.0 - health) * 0.9 + maxf(0, 0.3 - tree.moisture)
 			var basis := Basis(Vector3.UP, angle) * Basis(Vector3.RIGHT, tilt)
 			basis = basis.scaled(Vector3.ONE * float(leaf.size))
 			transforms.append(Transform3D(basis, tree.point(b.id, leaf.at)))

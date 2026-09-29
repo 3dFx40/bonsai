@@ -22,6 +22,8 @@ if ($Test) {
         & $Godot --headless --path $projectDir --script "res://tests/$suite.gd" -- --integration
         if ($LASTEXITCODE) { exit $LASTEXITCODE }
     }
+    & $Godot --headless --path $projectDir --script res://tests/relaunch_test.gd
+    if ($LASTEXITCODE) { exit $LASTEXITCODE }
     & $Godot --headless --path $projectDir --quit-after 10 -- --smoke
 } elseif ($Editor) {
     & $Godot --path $projectDir --editor

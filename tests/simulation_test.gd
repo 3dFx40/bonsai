@@ -51,5 +51,18 @@ func _initialize() -> void:
 	var age := offline.age_days
 	b.advance(offline, sim, -100, true)
 	check(offline.age_days == age, "Clock rollback cannot age tree")
+	for hours in [1, 12, 48, 168]:
+		var specimen := BonsaiTree.starter()
+		var test_clock := BonsaiClock.new()
+		var elapsed := test_clock.advance(specimen, sim, hours * 3600, true)
+		check(is_equal_approx(specimen.age_days, hours), "Offline age for %d hours" % hours)
+		check(elapsed.steps <= 112, "Bounded offline work for %d hours" % hours)
+		check(specimen.root_health >= 0.18, "Recoverable after %d hours" % hours)
+	var dim := BonsaiTree.starter()
+	dim.environment.light = 0.1
+	var bright := BonsaiTree.starter()
+	sim.advance_days(dim, 4)
+	sim.advance_days(bright, 4)
+	check(bright.branches[4].length > dim.branches[4].length, "Low light must slow extension")
 	print("Simulation tests: %d failures" % failures)
 	quit(1 if failures else 0)

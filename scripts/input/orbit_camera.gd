@@ -6,7 +6,7 @@ var camera: Camera3D
 var yaw := 0.2
 var pitch := 0.17
 var distance := 7.0
-var target := Vector3(0, 1.05, 0)
+var target := Vector3(0, 0.97, 0)
 var fingers: Dictionary = {}
 var start := Vector2.ZERO
 var previous := Vector2.ZERO
