@@ -38,22 +38,36 @@ func _make_leaf() -> ArrayMesh:
 	return st.commit()
 
 func _tube(st: SurfaceTool, points: Array[Vector3], radius: float, sides: int = 8) -> void:
-	for s in range(points.size() - 1):
-		var tangent := (points[s + 1] - points[s]).normalized()
-		var axis := Vector3.RIGHT if absf(tangent.dot(Vector3.UP)) > 0.95 else Vector3.UP
+	var rings: Array = []
+	var normals: Array = []
+	for i in points.size():
+		var tangent := (points[mini(i + 1, points.size() - 1)] - points[maxi(0, i - 1)]).normalized()
+		var axis := Vector3.FORWARD
+		if absf(tangent.dot(axis)) > 0.95: axis = Vector3.RIGHT
 		var u := tangent.cross(axis).normalized()
 		var v := tangent.cross(u).normalized()
-		var r0 := radius * lerpf(1.0, 0.45, float(s) / (points.size() - 1))
-		var r1 := radius * lerpf(1.0, 0.45, float(s + 1) / (points.size() - 1))
-		for j in range(sides):
+		var ring: Array[Vector3] = []
+		var normal_ring: Array[Vector3] = []
+		var r := radius * lerpf(1.0, 0.45, float(i) / (points.size() - 1))
+		for j in sides:
 			var a := float(j) * TAU / sides
-			var b := float(j + 1) * TAU / sides
-			var n0 := u * cos(a) + v * sin(a)
-			var n1 := u * cos(b) + v * sin(b)
-			var quad := [points[s] + n0 * r0, points[s] + n1 * r0, points[s + 1] + n0 * r1, points[s + 1] + n1 * r1]
-			for k in [0, 2, 1, 1, 2, 3]:
-				st.set_normal(n0 if k % 2 == 0 else n1)
-				st.add_vertex(quad[k])
+			var n := u * cos(a) + v * sin(a)
+			ring.append(points[i] + n * r)
+			normal_ring.append(n)
+		rings.append(ring)
+		normals.append(normal_ring)
+	for s in range(points.size() - 1):
+		for j in range(sides):
+			var next := (j + 1) % sides
+			for pair in [[s, j], [s, next], [s + 1, j], [s, next], [s + 1, next], [s + 1, j]]:
+				st.set_normal(normals[pair[0]][pair[1]])
+				st.add_vertex(rings[pair[0]][pair[1]])
+	var end := points.size() - 1
+	for j in sides:
+		st.set_normal((points[end] - points[end - 1]).normalized())
+		st.add_vertex(points[end])
+		st.add_vertex(rings[end][j])
+		st.add_vertex(rings[end][(j + 1) % sides])
 
 func rebuild(state: BonsaiTree) -> void:
 	tree = state

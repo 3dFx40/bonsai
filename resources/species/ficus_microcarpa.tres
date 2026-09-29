@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="BonsaiSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/simulation/species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "ficus_microcarpa"
+display_name = "Ficus microcarpa"
+moisture_min = 0.28
+moisture_max = 0.85
+water_use = 0.012
+light_requirement = 0.7
+temperature_min = 15.0
+temperature_max = 32.0
+humidity_preference = 0.65
+growth_speed = 0.018
+internode_length = 0.085
+leaf_size = 1.0
+branching_tendency = 0.11
+fertilizer_response = 0.8
+pruning_response = 1.8
+root_growth = 0.004
+seasonality = 0.0
+stress_tolerance = 0.75
+leaf_lifespan_days = 120.0

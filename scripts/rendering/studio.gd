@@ -30,14 +30,15 @@ func _ready() -> void:
 	env.background_color = Color("c5c4b6")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("e8e4d5")
-	env.ambient_light_energy = 0.65
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.ambient_light_energy = 0.70
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	world.environment = env
 	add_child(world)
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, -32, 0)
-	sun.light_color = Color("fff0d3")
-	sun.light_energy = 1.5
+	sun.light_color = Color("fff9ed")
+	sun.light_energy = 0.55
+	sun.shadow_blur = 2.0
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 15.0
 	add_child(sun)
