@@ -1,0 +1,30 @@
+; Bonsai — portable, touch-first vertical slice.
+config_version=5
+
+[application]
+config/name="Bonsai"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/description="A living tree. A little time, every day."
+
+[display]
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/size/window_width_override=450
+window/size/window_height_override=800
+window/stretch/mode="canvas_items"
+window/handheld/orientation=1
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+anti_aliasing/quality/msaa_3d=1
+environment/defaults/default_clear_color=Color(0.77, 0.76, 0.70, 1)
+
+[input_devices]
+pointing/emulate_mouse_from_touch=false
+
+[bonsai]
+developer_tools=true
+real_seconds_per_day=3600.0
