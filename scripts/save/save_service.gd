@@ -1,7 +1,7 @@
 class_name BonsaiSave
 extends RefCounted
 
-const VERSION := 1
+const VERSION := 2
 var path := "user://grove.json"
 var last_error := ""
 var last_error_args: Array = []
@@ -81,9 +81,37 @@ func _read(filename: String) -> Dictionary:
 	var data := migrate(raw)
 	return data if valid(data) else {}
 
+func read_backup(filename: String) -> Dictionary:
+	var document := _read(filename)
+	if document.is_empty(): return {}
+	for row: Dictionary in document.trees:
+		if row.species != "ficus_microcarpa": return {}
+	return document
+
+func export_backup(filename: String, document: Dictionary) -> bool:
+	if read_only or not valid(document): return false
+	var target := ProjectSettings.globalize_path(filename).simplify_path().to_lower()
+	for suffix in ["", ".bak", ".tmp", ".before-restore"]:
+		if target == ProjectSettings.globalize_path(path + suffix).simplify_path().to_lower(): return false
+	var file := FileAccess.open(filename, FileAccess.WRITE)
+	if file == null: return false
+	file.store_string(JSON.stringify(document))
+	file.flush()
+	file.close()
+	return not _read(filename).is_empty()
+
 func migrate(data: Dictionary) -> Dictionary:
-	# Add explicit version-to-version transformations here as the schema changes.
+	if data.get("version") == 1:
+		var upgraded := data.duplicate(true)
+		upgraded.version = VERSION
+		return upgraded
 	return data if data.get("version") == VERSION else {}
+
+func preserve_before_restore() -> bool:
+	if read_only: return false
+	if not FileAccess.file_exists(path): return true
+	if _read(path).is_empty(): return false
+	return DirAccess.copy_absolute(path, path + ".before-restore") == OK
 
 func _parse(text: String) -> Variant:
 	var parser := JSON.new()
@@ -107,6 +135,7 @@ func valid(data: Dictionary) -> bool:
 	var settings: Dictionary = data.settings
 	# Optional in v1: older saves remain valid and receive the device-language default.
 	if settings.has("language") and settings.language not in ["he", "en"]: return false
+	if settings.has("onboarded") and not settings.onboarded is bool: return false
 	if not _number(settings.get("real_seconds_per_day")) or settings.real_seconds_per_day < 60 or settings.real_seconds_per_day > 86400: return false
 	if not settings.get("sound") is bool or not settings.get("quality") in ["Low", "Medium", "High"]: return false
 	var ids: Array = []
@@ -116,6 +145,16 @@ func valid(data: Dictionary) -> bool:
 	return data.get("active_tree") in ids
 
 func _valid_tree(row: Dictionary) -> bool:
+	return _valid_tree_depth(row, true)
+
+func _valid_tree_depth(row: Dictionary, allow_memories: bool) -> bool:
+	if not row.get("display_name", "") is String or row.get("display_name", "").length() > 40: return false
+	var memories: Variant = row.get("memories", [])
+	if not memories is Array or memories.size() > (12 if allow_memories else 0): return false
+	for memory in memories:
+		if not memory is Dictionary or not _number(memory.get("day")) or memory.day < 0: return false
+		if not memory.get("label") is String or memory.label.length() > 80: return false
+		if not memory.get("tree") is Dictionary or not _valid_tree_depth(memory.tree, false): return false
 	for key in ["id", "species", "pot"]:
 		if not row.get(key) is String or row[key].is_empty(): return false
 	for key in ["age_days", "acquired_at", "next_id", "moisture", "nutrients", "root_health", "root_mass", "energy", "stress", "pruning_stress", "water_capacity", "drainage"]:
@@ -131,6 +170,8 @@ func _valid_tree(row: Dictionary) -> bool:
 		for key in ["angle", "length", "thickness"]:
 			if not _number(root.get(key)): return false
 	if not row.get("history") is Array or row.history.size() > 256: return false
+	for entry in row.history:
+		if not entry is Dictionary or not _number(entry.get("day")) or not entry.get("action") is String: return false
 	if not row.get("branches") is Array or row.branches.is_empty() or row.branches.size() > BonsaiTree.MAX_BRANCHES: return false
 	var parents: Dictionary = {}
 	var root_count := 0
@@ -143,6 +184,7 @@ func _valid_tree(row: Dictionary) -> bool:
 		if not _vector(b.get("direction")) or not _vector(b.get("bend")): return false
 		if Vector3(b.direction[0], b.direction[1], b.direction[2]).length() < 0.1: return false
 		if not b.get("pruned") is bool or not b.get("wiring") is Dictionary: return false
+		if not _number(b.get("curve_span", 1.0)) or b.get("curve_span", 1.0) <= 0 or b.get("curve_span", 1.0) > 1: return false
 		if not b.get("leaves") is Array or b.leaves.size() > BonsaiTree.MAX_LEAVES: return false
 		for leaf in b.leaves:
 			if not leaf is Dictionary: return false

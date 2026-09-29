@@ -3,6 +3,177 @@ msgstr ""
 "Language: he\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 
+msgid "Recover tree from before last restore"
+msgstr "החזרת העץ מלפני השחזור האחרון"
+
+msgid "No previous restore is available."
+msgstr "אין כרגע עותק מלפני שחזור קודם."
+
+msgid "Journal"
+msgstr "יומן העץ"
+
+msgid "Settings"
+msgstr "הגדרות"
+
+msgid "Close"
+msgstr "סגירה"
+
+msgid "Shape"
+msgstr "עיצוב"
+
+msgid "Undo change"
+msgstr "ביטול הפעולה"
+
+msgid "Remove whole branch"
+msgstr "הסרת הענף כולו"
+
+msgid "Shorten branch"
+msgstr "קיצור הענף"
+
+msgid "Turn left / right"
+msgstr "סיבוב ימינה ושמאלה"
+
+msgid "Tilt down / up"
+msgstr "הטיה למעלה ולמטה"
+
+msgid "Your tree's name"
+msgstr "שם העץ שלך"
+
+msgid "Save name"
+msgstr "שמירת השם"
+
+msgid "Care guide"
+msgstr "מדריך טיפול"
+
+msgid "Keep a copy of your tree outside the app. Restore it on another device or after reinstalling."
+msgstr "כדאי לשמור עותק של העץ מחוץ לאפליקציה. כך אפשר לשחזר אותו במכשיר אחר או אחרי התקנה מחדש."
+
+msgid "Export backup"
+msgstr "ייצוא גיבוי"
+
+msgid "Restore backup"
+msgstr "שחזור מגיבוי"
+
+msgid "A tree of your own"
+msgstr "עץ משלך"
+
+msgid "Start by looking. Drag to turn the tree and pinch to get closer. Tap a branch to inspect it."
+msgstr "מתחילים בהתבוננות. גוררים כדי לסובב את העץ וצובטים כדי להתקרב. נוגעים בענף כדי לבדוק אותו."
+
+msgid "Water when the soil is dry. Fertilizer is occasional; adding more does not mean faster growth."
+msgstr "משקים כשהאדמה יבשה. מדשנים רק מדי פעם; יותר דשן לא מבטיח יותר צמיחה."
+
+msgid "Prune to make space. Amber branches show what will be removed. Shape lets you turn a branch before applying the change."
+msgstr "גוזמים כדי לפנות מקום. החלקים שיוסרו מסומנים בכתום. בכלי העיצוב אפשר לסובב ענף ולראות את התוצאה לפני האישור."
+
+msgid "Your tree grows between visits. Changes accumulate over hours. Long absences are protected, and the tree can recover."
+msgstr "העץ גדל גם בין ביקורים. השינוי מצטבר לאורך שעות. בהיעדרות ארוכה העץ נכנס למנוחה ויכול להתאושש כשתחזרו."
+
+msgid "The journal keeps the first portrait and your recent ones. Compare them to see your work over time."
+msgstr "היומן שומר את הדיוקן הראשון ואת הדיוקנאות האחרונים. אפשר להשוות ביניהם ולראות איך העץ השתנה."
+
+msgid "Start caring"
+msgstr "אל העץ שלי"
+
+msgid "Save a portrait"
+msgstr "שמירת דיוקן"
+
+msgid "Choose a portrait to compare with your tree today."
+msgstr "בחרו דיוקן להשוואה עם העץ של היום."
+
+msgid "Restore this backup? It replaces your current tree and settings. The previous save is kept as the local recovery copy."
+msgstr "לשחזר את הגיבוי? העץ וההגדרות הנוכחיים יוחלפו. השמירה הקודמת תישמר כעותק שחזור מקומי."
+
+msgid "Restore this tree"
+msgstr "שחזור העץ"
+
+msgid "Cancel"
+msgstr "ביטול"
+
+msgid "Day %d · %d branches"
+msgstr "יום %d · %d ענפים"
+
+msgid "Recent care"
+msgstr "טיפולים אחרונים"
+
+msgid "Day %d · %s"
+msgstr "יום %d · %s"
+
+msgid "Select a branch to shape"
+msgstr "בחרו ענף לעיצוב"
+
+msgid "Keep %d%% of the branch"
+msgstr "להשאיר %d%% מהענף"
+
+msgid "The soil is saturated. Let it drain before watering again."
+msgstr "האדמה רוויה. כדאי לתת למים להתנקז לפני ההשקיה הבאה."
+
+msgid "The soil is dry. One slow watering will help."
+msgstr "האדמה יבשה. השקיה איטית אחת תעזור."
+
+msgid "There is excess fertilizer. Stop feeding and give the roots time."
+msgstr "יש עודף דשן. מפסיקים לדשן ונותנים לשורשים זמן להתאושש."
+
+msgid "Low light is slowing growth. Recovery takes time."
+msgstr "מעט האור מאט את הצמיחה. ההתאוששות דורשת זמן."
+
+msgid "New cuts are healing. Let the tree recover before shaping again."
+msgstr "העץ מתאושש מהגיזום. כדאי לתת לו לנוח לפני שמעצבים שוב."
+
+msgid "The roots are recovering. Keep the soil lightly moist and wait."
+msgstr "השורשים מתאוששים. שומרים על אדמה לחה מעט ונותנים להם זמן."
+
+msgid "The soil is low on nutrients. A small dose will support new growth."
+msgstr "חסרים חומרי הזנה באדמה. מעט דשן יעזור לצמיחה חדשה."
+
+msgid "The tree is doing well. No care is needed right now."
+msgstr "העץ במצב טוב. כרגע אין צורך בטיפול."
+
+msgid "Since your last visit: %d new leaves."
+msgstr "מאז הביקור הקודם: %d עלים חדשים."
+
+msgid "Amber shows the cut. Tap again to select an overlapping branch."
+msgstr "החלק שיוסר מסומן בכתום. נגיעה נוספת בוחרת ענף חופף."
+
+msgid "Turn and tilt a branch, then apply. Preview does not change your tree."
+msgstr "מסובבים ומטים את הענף, ואז מאשרים. התצוגה המקדימה לא משנה את העץ."
+
+msgid "Save is protected. Restore a compatible version before making changes."
+msgstr "השמירה מוגנת. יש לפתוח אותה בגרסה תואמת לפני שמשנים את העץ."
+
+msgid "Space for new growth. You can undo this change for 15 seconds."
+msgstr "התפנה מקום לצמיחה חדשה. אפשר לבטל את הפעולה במשך 15 שניות."
+
+msgid "The new shape is saved. You can undo it for 15 seconds."
+msgstr "העיצוב החדש נשמר. אפשר לבטל אותו במשך 15 שניות."
+
+msgid "Shorten branch · remove %d shoots"
+msgstr "לקצר את הענף · יוסרו %d ענפים"
+
+msgid "Apply shape"
+msgstr "אישור העיצוב"
+
+msgid "Show today's tree"
+msgstr "הצגת העץ של היום"
+
+msgid "Day %d · Show today's tree"
+msgstr "יום %d · לעץ של היום"
+
+msgid "Today · Show saved portrait"
+msgstr "היום · לדיוקן השמור"
+
+msgid "This backup is invalid or needs another version. Your tree was not changed."
+msgstr "הגיבוי פגום או דורש גרסה אחרת. העץ שלך לא השתנה."
+
+msgid "Backup exported. Keep it somewhere safe."
+msgstr "הגיבוי יוצא בהצלחה. כדאי לשמור אותו במקום בטוח."
+
+msgid "Could not export the backup. Try another location."
+msgstr "ייצוא הגיבוי נכשל. נסו לשמור במיקום אחר."
+
+msgid "Your tree has been restored."
+msgstr "העץ שוחזר בהצלחה."
+
 msgid "B O N S A I   /   A LIVING PRACTICE"
 msgstr "בונסאי / לגדל בקצב שלך"
 
@@ -242,4 +413,3 @@ msgstr "לא ניתן לקרוא את השמירה. הקבצים המקוריי�
 
 msgid "Purchases are not enabled in this prototype."
 msgstr "רכישות אינן זמינות בגרסת הניסוי."
-

@@ -14,6 +14,7 @@ var buds := 2
 var bud_charge := 0.0
 var pruned := false
 var bend := Vector3.ZERO
+var curve_span := 1.0
 var wiring: Dictionary = {}
 var leaves: Array = []
 
@@ -22,7 +23,7 @@ func to_data() -> Dictionary:
 		"direction": [direction.x, direction.y, direction.z], "length": length,
 		"thickness": thickness, "age": age, "health": health, "energy": energy,
 		"buds": buds, "bud_charge": bud_charge, "pruned": pruned,
-		"bend": [bend.x, bend.y, bend.z], "wiring": wiring.duplicate(true),
+		"bend": [bend.x, bend.y, bend.z], "curve_span": curve_span, "wiring": wiring.duplicate(true),
 		"leaves": leaves.duplicate(true)}
 
 static func from_data(data: Dictionary) -> BonsaiBranch:
@@ -40,6 +41,7 @@ static func from_data(data: Dictionary) -> BonsaiBranch:
 	b.bud_charge = float(data.get("bud_charge", 0))
 	b.pruned = bool(data.pruned)
 	b.bend = Vector3(data.bend[0], data.bend[1], data.bend[2])
+	b.curve_span = float(data.get("curve_span", 1.0))
 	b.wiring = data.get("wiring", {}).duplicate(true)
 	b.leaves = data.leaves.duplicate(true)
 	return b

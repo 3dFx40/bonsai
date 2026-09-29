@@ -14,6 +14,13 @@ var start_ms := 0
 var moved := false
 var mouse_down := false
 var cinematic := false
+var input_enabled := true
+
+func set_input_enabled(value: bool) -> void:
+	input_enabled = value
+	fingers.clear()
+	mouse_down = false
+	moved = false
 
 func _ready() -> void:
 	camera = Camera3D.new()
@@ -49,6 +56,7 @@ func _finish(pos: Vector2) -> void:
 		tapped.emit(pos, Time.get_ticks_msec() - start_ms > 500)
 
 func _input(event: InputEvent) -> void:
+	if not input_enabled: return
 	# Always release tracked touches, including releases over UI controls.
 	if event is InputEventScreenTouch and not event.pressed:
 		if fingers.has(event.index):
@@ -61,6 +69,7 @@ func _input(event: InputEvent) -> void:
 		mouse_down = false
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not input_enabled: return
 	if event is InputEventScreenTouch and event.pressed:
 		fingers[event.index] = event.position
 		if fingers.size() == 1:

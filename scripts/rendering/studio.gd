@@ -30,14 +30,14 @@ func _ready() -> void:
 	env.background_color = Color("c5c4b6")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("e8e4d5")
-	env.ambient_light_energy = 0.70
+	env.ambient_light_energy = 0.48
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	world.environment = env
 	add_child(world)
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, -32, 0)
 	sun.light_color = Color("fff9ed")
-	sun.light_energy = 0.55
+	sun.light_energy = 0.85
 	sun.shadow_blur = 2.0
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 15.0
@@ -113,3 +113,27 @@ func _pot_mesh() -> ArrayMesh:
 
 func set_moisture(value: float) -> void:
 	soil.material_override.albedo_color = Color("897356").lerp(Color("29281f"), clampf(value, 0, 1))
+
+func pour() -> void:
+	var drops := MultiMeshInstance3D.new()
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.012
+	mesh.height = 0.048
+	mesh.radial_segments = 6
+	mesh.rings = 3
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.instance_count = 24
+	drops.multimesh = mm
+	drops.material_override = material(Color("a7cbd0"), 0.2)
+	add_child(drops)
+	var animate := func(t: float):
+		for i in mm.instance_count:
+			var phase := fmod(t * 2 + i / 24.0, 1.0)
+			var at := Vector3(0.4 + sin(i * 2.4) * 0.2, 0.32 + (1 - phase) * 0.65, cos(i * 2.4) * 0.18)
+			mm.set_instance_transform(i, Transform3D(Basis.IDENTITY, at))
+	animate.call(0.0)
+	var tween := create_tween()
+	tween.tween_method(animate, 0.0, 1.0, 0.85)
+	tween.tween_callback(drops.queue_free)

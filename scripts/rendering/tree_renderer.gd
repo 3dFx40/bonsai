@@ -8,10 +8,15 @@ var highlight: MeshInstance3D
 var foliage: MultiMeshInstance3D
 var leaf_mesh: ArrayMesh
 var samples: Dictionary = {}
+var cut_fraction := -1.0
+var _last_pick := Vector2(-1000, -1000)
+var _pick_index := 0
 
 func _ready() -> void:
 	branches_mesh = MeshInstance3D.new()
-	branches_mesh.material_override = BonsaiStudio.material(Color("766e53"))
+	var bark := BonsaiStudio.material(Color("9a886b"), 0.94)
+	bark.vertex_color_use_as_albedo = true
+	branches_mesh.material_override = bark
 	add_child(branches_mesh)
 	highlight = MeshInstance3D.new()
 	var selection := BonsaiStudio.material(Color("b5ba83"))
@@ -33,13 +38,15 @@ func _make_leaf() -> ArrayMesh:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var edge := [Vector3(0, 0, 0), Vector3(-0.038, 0, 0.04), Vector3(-0.057, 0, 0.10), Vector3(-0.045, 0, 0.17), Vector3(0, -0.004, 0.23), Vector3(0.045, 0, 0.17), Vector3(0.057, 0, 0.10), Vector3(0.038, 0, 0.04)]
 	for i in edge.size():
-		st.set_normal(Vector3.UP)
+		st.set_color(Color("bfd898"))
 		st.add_vertex(Vector3(0, 0.016, 0.105))
+		st.set_color(Color("779156"))
 		st.add_vertex(edge[i])
 		st.add_vertex(edge[(i + 1) % edge.size()])
+	st.generate_normals()
 	return st.commit()
 
-func _tube(st: SurfaceTool, points: Array[Vector3], radius: float, sides: int = 8) -> void:
+func _tube(st: SurfaceTool, points: Array[Vector3], radius: float, sides: int = 12) -> void:
 	var rings: Array = []
 	var normals: Array = []
 	for i in points.size():
@@ -62,6 +69,9 @@ func _tube(st: SurfaceTool, points: Array[Vector3], radius: float, sides: int = 
 		for j in range(sides):
 			var next := (j + 1) % sides
 			for pair in [[s, j], [s + 1, j], [s, next], [s, next], [s + 1, j], [s + 1, next]]:
+				var p: Vector3 = rings[pair[0]][pair[1]]
+				var variation := 0.83 + 0.13 * sin(p.y * 43 + p.x * 95 + p.z * 68)
+				st.set_color(Color(variation, variation, variation, 1))
 				st.set_normal(normals[pair[0]][pair[1]])
 				st.add_vertex(rings[pair[0]][pair[1]])
 	var end := points.size() - 1
@@ -80,8 +90,8 @@ func rebuild(state: BonsaiTree) -> void:
 	var colors: Array[Color] = []
 	for b: BonsaiBranch in tree.branches.values():
 		var points: Array[Vector3] = []
-		for step in range(7):
-			points.append(tree.point(b.id, step / 6.0))
+		for step in range(13):
+			points.append(tree.point(b.id, step / 12.0))
 		samples[b.id] = points
 		_tube(st, points, b.thickness)
 		for leaf: Dictionary in b.leaves:
@@ -116,13 +126,24 @@ func select(id: int) -> void:
 		return
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_tube(st, samples[selected_id], tree.branches[selected_id].thickness * 1.10)
+	var material := highlight.material_override as StandardMaterial3D
+	material.albedo_color = Color("dfa960") if cut_fraction >= 0 else Color("b5ce9b")
+	material.emission = material.albedo_color
+	if cut_fraction >= 0:
+		var ids := tree.descendants(selected_id) if cut_fraction == 0 else tree.cut_descendants(selected_id, cut_fraction)
+		for key in ids: _tube(st, samples[key], tree.branches[key].thickness * 1.13)
+		if cut_fraction > 0:
+			var points: Array[Vector3] = []
+			for step in range(13): points.append(tree.point(selected_id, lerpf(cut_fraction, 1, step / 12.0)))
+			_tube(st, points, tree.branches[selected_id].thickness * lerpf(1, 0.45, cut_fraction) * 1.13)
+	else:
+		_tube(st, samples[selected_id], tree.branches[selected_id].thickness * 1.10)
 	highlight.mesh = st.commit()
 
 func pick(screen: Vector2, camera: Camera3D) -> int:
-	var best := -1
-	var best_score := INF
+	var candidates: Array = []
 	for id: int in samples:
+		var best_score := INF
 		var points: Array = samples[id]
 		for i in range(points.size() - 1):
 			var a: Vector3 = to_global(points[i])
@@ -136,5 +157,9 @@ func pick(screen: Vector2, camera: Camera3D) -> int:
 			var score := d + camera.global_position.distance_to(a) * 0.5
 			if d < 24 and score < best_score:
 				best_score = score
-				best = id
-	return best
+		if best_score < INF: candidates.append({"id": id, "score": best_score})
+	candidates.sort_custom(func(a, b): return a.score < b.score)
+	if candidates.is_empty(): return -1
+	_pick_index = (_pick_index + 1) % candidates.size() if screen.distance_to(_last_pick) < 18 else 0
+	_last_pick = screen
+	return candidates[_pick_index].id

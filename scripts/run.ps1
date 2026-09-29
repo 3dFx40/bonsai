@@ -18,7 +18,7 @@ New-Item -ItemType Directory -Force -Path $env:APPDATA | Out-Null
 if ($Test) {
     & $Godot --headless --path $projectDir --editor --import --quit
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
-    foreach ($suite in @('tree_test', 'simulation_test', 'save_test', 'input_test', 'localization_test')) {
+    foreach ($suite in @('tree_test', 'simulation_test', 'save_test', 'readiness_test', 'input_test', 'localization_test', 'experience_test')) {
         & $Godot --headless --path $projectDir --script "res://tests/$suite.gd" -- --integration
         if ($LASTEXITCODE) { exit $LASTEXITCODE }
     }
