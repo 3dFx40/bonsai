@@ -37,6 +37,7 @@ func _ready() -> void:
 		saves.path = "user://automation-grove.json"
 	var loaded := {} if automation else saves.load_document()
 	var welcome := "A little attention, every day."
+	var welcome_args: Array = []
 	if not loaded.is_empty():
 		settings = loaded.settings
 		for row: Dictionary in loaded.trees:
@@ -54,6 +55,13 @@ func _ready() -> void:
 	if trees.is_empty():
 		tree.acquired_at = platform.unix_time()
 		trees = [tree]
+	var default_language := "he" if OS.get_locale_language() in ["he", "iw"] else "en"
+	settings.language = settings.get("language", default_language)
+	if automation:
+		for argument in OS.get_cmdline_user_args():
+			if argument in ["--language=he", "--language=en"]:
+				settings.language = argument.get_slice("=", 1)
+	TranslationServer.set_locale(settings.language)
 	clock.real_seconds_per_day = settings.real_seconds_per_day
 	var now := platform.unix_time()
 	if last_wall > 0:
@@ -61,7 +69,8 @@ func _ready() -> void:
 		if result.dormant_days > 0:
 			welcome = "Welcome back. Your tree rested through the long absence."
 		elif result.days > 0:
-			welcome = "Welcome back. %.1f days have passed for your tree." % result.days
+			welcome = "Welcome back. %.1f days have passed for your tree."
+			welcome_args = [result.days]
 	last_wall = maxf(last_wall, now)
 	last_tick = Time.get_ticks_msec()
 	studio = BonsaiStudio.new()
@@ -83,6 +92,7 @@ func _ready() -> void:
 	hud.debug_requested.connect(_toggle_debug)
 	hud.sound_requested.connect(_toggle_sound)
 	hud.quality_requested.connect(_quality)
+	hud.language_requested.connect(_language)
 	if OS.is_debug_build() and ProjectSettings.get_setting("bonsai/developer_tools", false):
 		debug_panel = BonsaiDebugPanel.new()
 		hud.root.add_child(debug_panel)
@@ -90,13 +100,16 @@ func _ready() -> void:
 		debug_panel.command.connect(_debug)
 	_apply_quality()
 	_refresh()
-	hud.message(saves.last_error if not saves.last_error.is_empty() else welcome)
+	if saves.last_error.is_empty(): hud.message(welcome, welcome_args)
+	else: hud.message(saves.last_error, saves.last_error_args)
 	_save()
 	if "--capture" in OS.get_cmdline_user_args():
+		if "--capture-debug" in OS.get_cmdline_user_args(): _toggle_debug()
 		for i in range(30):
 			await get_tree().process_frame
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png("res://builds/studio.png")
+		get_viewport().get_texture().get_image().save_png("res://builds/studio-%s%s.png" % [settings.language, "-debug" if "--capture-debug" in OS.get_cmdline_user_args() else ""])
 		get_tree().quit()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
@@ -149,15 +162,17 @@ func _selection(held := false) -> void:
 	if selected < 0:
 		if mode == "prune":
 			hud.action.disabled = true
-			hud.action.text = "Select a branch to cut"
+			hud.set_action("Select a branch to cut")
 		return
 	var b: BonsaiBranch = tree.branches[selected]
 	if mode == "prune":
 		hud.action.disabled = b.parent_id < 0
-		hud.action.text = "Keep the main trunk" if b.parent_id < 0 else "Cut branch · %d segments" % tree.descendants(selected).size()
+		if b.parent_id < 0: hud.set_action("Keep the main trunk")
+		else: hud.set_action("Cut branch · %d segments", [tree.descendants(selected).size()])
 	else:
 		var condition := "Healthy" if b.health > 0.7 else "Under stress"
-		hud.message("Branch %d · %s · %d leaves%s" % [b.id, condition, b.leaves.size(), " · %.1f days old" % b.age if held else ""])
+		if held: hud.message("Branch %d · %s · Leaves: %d · Age: %.1f days", [b.id, condition, b.leaves.size(), b.age])
+		else: hud.message("Branch %d · %s · Leaves: %d", [b.id, condition, b.leaves.size()])
 
 func _clear_undo() -> void:
 	undo_data.clear()
@@ -183,7 +198,7 @@ func _action() -> void:
 				hud.undo.visible = true
 				renderer.select(-1)
 				hud.action.disabled = true
-				hud.action.text = "Select another branch"
+				hud.set_action("Select another branch")
 				hud.message("A little space for new growth. Undo is available for 8 seconds.")
 	_refresh()
 	_save()
@@ -208,7 +223,7 @@ func _save() -> void:
 		last_wall = maxf(last_wall, platform.unix_time())
 	var document := saves.make_document(trees, tree.id, settings, last_wall, clock.pending_days)
 	if not saves.write_document(document) and hud != null:
-		hud.message(saves.last_error)
+		hud.message(saves.last_error, saves.last_error_args)
 
 func _suspend() -> void:
 	if suspended: return
@@ -291,6 +306,12 @@ func _toggle_sound() -> void:
 	settings.sound = not settings.sound
 	sound.enabled = settings.sound
 	hud.sound_button.text = "Sound on" if settings.sound else "Sound off"
+	_save()
+
+func _language(language: String) -> void:
+	if language not in ["he", "en"]: return
+	settings.language = language
+	TranslationServer.set_locale(language)
 	_save()
 
 func _quality() -> void:

@@ -5,6 +5,7 @@ signal command(action: String, value: float)
 var report: Label
 var graph: TextEdit
 var pause_button: Button
+var _state: BonsaiTree
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -30,6 +31,7 @@ func _ready() -> void:
 	var note := Label.new()
 	note.text = "Time buttons advance BIOLOGICAL time.\nNormal rate: 1 real hour = 1 biological day."
 	note.add_theme_font_size_override("font_size", 18)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(note)
 	for entry in [["Soil moisture", "moisture", 1.8], ["Nutrients", "nutrients", 2.0], ["Light", "light", 1.5]]:
 		var label := Label.new()
@@ -66,10 +68,15 @@ func _button(parent: Control, title: String, action: String, value := 0.0) -> Bu
 	return button
 
 func update_state(tree: BonsaiTree) -> void:
+	_state = tree
 	if not visible or report == null:
 		return
-	report.text = "Day %.2f | %d branches | %d leaves\nMoisture %.3f | nutrients %.3f\nRoots %.3f | energy %.3f | stress %.3f\nPruning stress %.3f | light %.2f" % [tree.age_days, tree.branches.size(), tree.leaf_count(), tree.moisture, tree.nutrients, tree.root_health, tree.energy, tree.stress, tree.pruning_stress, tree.environment.light]
-	var lines := "ID ← parent | length | radius | buds\n"
+	report.text = tr("Day %.2f | %d branches | %d leaves\nMoisture %.3f | nutrients %.3f\nRoots %.3f | energy %.3f | stress %.3f\nPruning stress %.3f | light %.2f") % [tree.age_days, tree.branches.size(), tree.leaf_count(), tree.moisture, tree.nutrients, tree.root_health, tree.energy, tree.stress, tree.pruning_stress, tree.environment.light]
+	var lines := tr("ID ← parent | length | radius | buds\n")
 	for b: BonsaiBranch in tree.branches.values():
 		lines += "%d ← %d | %.3f | %.4f | %d\n" % [b.id, b.parent_id, b.length, b.thickness, b.buds]
 	graph.text = lines
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready() and _state != null:
+		update_state(_state)

@@ -7,6 +7,7 @@ signal undo_requested
 signal debug_requested
 signal sound_requested
 signal quality_requested
+signal language_requested(language: String)
 var root: Control
 var date_label: Label
 var status: Label
@@ -20,6 +21,12 @@ var bottom: MarginContainer
 var view_exit: Button
 var sound_button: Button
 var quality_button: Button
+var language_picker: OptionButton
+var _state: BonsaiTree
+var _message_key := "A little attention, every day."
+var _message_args: Array = []
+var _action_key := "Tap a branch to look closer"
+var _action_args: Array = []
 
 static func style(color: Color, radius := 16) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
@@ -43,7 +50,7 @@ static func button(text: String) -> Button:
 
 func _ready() -> void:
 	root = Control.new()
-	root.layout_direction = Control.LAYOUT_DIRECTION_LTR
+	root.layout_direction = Control.LAYOUT_DIRECTION_LOCALE
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
@@ -62,11 +69,30 @@ func _ready() -> void:
 	top.offset_left = 38
 	top.offset_right = -38
 	top.offset_top = 46
+	top.offset_bottom = 164
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(top)
+	var header_row := HBoxContainer.new()
+	header_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top.add_child(header_row)
 	var header := VBoxContainer.new()
+	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top.add_child(header)
+	header_row.add_child(header)
+	var language_box := VBoxContainer.new()
+	header_row.add_child(language_box)
+	var language_label := Label.new()
+	language_label.text = "Language"
+	language_label.add_theme_font_size_override("font_size", 18)
+	language_label.add_theme_color_override("font_color", Color("283725"))
+	language_box.add_child(language_label)
+	language_picker = OptionButton.new()
+	language_picker.custom_minimum_size = Vector2(132, 70)
+	language_picker.add_item("עברית")
+	language_picker.add_item("English")
+	language_picker.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	language_picker.item_selected.connect(func(index: int): language_requested.emit("he" if index == 0 else "en"))
+	language_box.add_child(language_picker)
 	var eyebrow := Label.new()
 	eyebrow.text = "B O N S A I   /   A LIVING PRACTICE"
 	eyebrow.add_theme_font_size_override("font_size", 19)
@@ -143,6 +169,7 @@ func _ready() -> void:
 	sound_button.pressed.connect(func(): sound_requested.emit())
 	footer.add_child(sound_button)
 	quality_button = button("Medium")
+	quality_button.tooltip_text = "Graphics quality"
 	quality_button.custom_minimum_size = Vector2(96, 56)
 	quality_button.add_theme_font_size_override("font_size", 16)
 	quality_button.pressed.connect(func(): quality_requested.emit())
@@ -157,6 +184,7 @@ func _ready() -> void:
 	view_exit.pressed.connect(func(): tool_selected.emit("inspect"))
 	root.add_child(view_exit)
 	set_tool("inspect")
+	_retranslate()
 
 func set_tool(tool: String) -> void:
 	for key in buttons:
@@ -166,18 +194,40 @@ func set_tool(tool: String) -> void:
 	view_exit.visible = tool == "camera"
 	action.disabled = tool == "inspect" or tool == "prune"
 	match tool:
-		"water": action.text = "Water the soil"
-		"fertilize": action.text = "Add a small dose"
-		"prune": action.text = "Select a branch to cut"
-		_: action.text = "Tap a branch to look closer"
+		"water": set_action("Water the soil")
+		"fertilize": set_action("Add a small dose")
+		"prune": set_action("Select a branch to cut")
+		_: set_action("Tap a branch to look closer")
 
 func update_state(tree: BonsaiTree) -> void:
-	date_label.text = "DAY %03d   ·   YOUR WINDOW STUDIO" % (int(tree.age_days) + 1)
+	_state = tree
+	date_label.text = tr("DAY %03d   ·   YOUR WINDOW STUDIO") % (int(tree.age_days) + 1)
 	var soil := "Moist"
 	if tree.moisture < 0.28: soil = "Dry"
 	elif tree.moisture > 0.95: soil = "Waterlogged"
 	var health := "Settling" if tree.pruning_stress > 0.15 else ("Needs care" if tree.stress > 0.4 else "Vigorous")
-	status.text = "Soil: %s   ·   %s" % [soil, health]
+	status.text = tr("Soil: %s   ·   %s") % [tr(soil), tr(health)]
 
-func message(text: String) -> void:
-	detail.text = text
+func message(key: String, args: Array = []) -> void:
+	_message_key = key
+	_message_args = args.duplicate()
+	detail.text = _format(key, args)
+
+func set_action(key: String, args: Array = []) -> void:
+	_action_key = key
+	_action_args = args.duplicate()
+	action.text = _format(key, args)
+
+func _format(key: String, args: Array) -> String:
+	var translated: Array = args.map(func(value): return tr(value) if value is String else value)
+	return tr(key) if args.is_empty() else tr(key) % translated
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
+		_retranslate()
+
+func _retranslate() -> void:
+	language_picker.select(0 if TranslationServer.get_locale().begins_with("he") else 1)
+	if _state != null: update_state(_state)
+	message(_message_key, _message_args)
+	set_action(_action_key, _action_args)

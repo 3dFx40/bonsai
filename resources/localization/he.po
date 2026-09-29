@@ -1,0 +1,245 @@
+msgid ""
+msgstr ""
+"Language: he\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "B O N S A I   /   A LIVING PRACTICE"
+msgstr "בונסאי / לגדל בקצב שלך"
+
+msgid "Ficus microcarpa"
+msgstr "פיקוס מיקרוקרפה"
+
+msgid "Language"
+msgstr "שפה"
+
+msgid "Dev"
+msgstr "פיתוח"
+
+msgid "A little attention, every day."
+msgstr "קצת תשומת לב, בכל יום."
+
+msgid "Observe"
+msgstr "בדיקה"
+
+msgid "Water"
+msgstr "השקיה"
+
+msgid "Feed"
+msgstr "דישון"
+
+msgid "Prune"
+msgstr "גיזום"
+
+msgid "View"
+msgstr "צפייה"
+
+msgid "Tap a branch to look closer"
+msgstr "נגיעה בענף מציגה מידע עליו"
+
+msgid "Undo cut"
+msgstr "ביטול הגיזום"
+
+msgid "DRAG TO ORBIT  ·  PINCH TO ZOOM"
+msgstr "גרירה לסיבוב · צביטה לקירוב"
+
+msgid "Sound off"
+msgstr "צליל כבוי"
+
+msgid "Sound on"
+msgstr "צליל פעיל"
+
+msgid "Low"
+msgstr "נמוכה"
+
+msgid "Medium"
+msgstr "בינונית"
+
+msgid "High"
+msgstr "גבוהה"
+
+msgid "Graphics quality"
+msgstr "איכות תצוגה"
+
+msgid "Back to care"
+msgstr "חזרה לטיפול"
+
+msgid "Water the soil"
+msgstr "להשקות את האדמה"
+
+msgid "Add a small dose"
+msgstr "להוסיף מעט דשן"
+
+msgid "Select a branch to cut"
+msgstr "יש לבחור ענף לגיזום"
+
+msgid "DAY %03d   ·   YOUR WINDOW STUDIO"
+msgstr "יום %03d · הסטודיו שלך"
+
+msgid "Moist"
+msgstr "לחה"
+
+msgid "Dry"
+msgstr "יבשה"
+
+msgid "Waterlogged"
+msgstr "רוויה מדי"
+
+msgid "Settling"
+msgstr "מתאושש"
+
+msgid "Needs care"
+msgstr "זקוק לטיפול"
+
+msgid "Vigorous"
+msgstr "חיוני"
+
+msgid "Soil: %s   ·   %s"
+msgstr "אדמה: %s · העץ %s"
+
+msgid "Tap a branch. The cut removes it and all its shoots."
+msgstr "יש לבחור ענף. הגיזום יסיר אותו ואת כל הענפים שיוצאים ממנו."
+
+msgid "Water slowly. Let the soil breathe between visits."
+msgstr "להשקות לאט, ולתת לאדמה להתאוורר בין השקיות."
+
+msgid "A small dose supports growth. Too much stresses roots."
+msgstr "מעט דשן מסייע לצמיחה. עודף דשן פוגע בשורשים."
+
+msgid "Hold a branch to inspect. Drag to turn your tree."
+msgstr "לחיצה ארוכה על ענף מציגה מידע נוסף. גרירה מסובבת את העץ."
+
+msgid "Keep the main trunk"
+msgstr "הגזע הראשי נשאר"
+
+msgid "Cut branch · %d segments"
+msgstr "לגזום את הענף · %d מקטעים"
+
+msgid "Healthy"
+msgstr "בריא"
+
+msgid "Under stress"
+msgstr "במצב עקה"
+
+msgid "Branch %d · %s · Leaves: %d"
+msgstr "ענף %d · %s · עלים: %d"
+
+msgid "Branch %d · %s · Leaves: %d · Age: %.1f days"
+msgstr "ענף %d · %s · עלים: %d · גיל: %.1f ימים"
+
+msgid "Water settles into the soil."
+msgstr "המים נספגים באדמה."
+
+msgid "The soil is saturated. Give it time to drain."
+msgstr "האדמה רוויה. כדאי להמתין לניקוז המים."
+
+msgid "A small dose, for the days ahead."
+msgstr "מעט דשן להמשך הצמיחה."
+
+msgid "There is already plenty of food in this soil."
+msgstr "כבר יש מספיק דשן באדמה."
+
+msgid "Select another branch"
+msgstr "בחירת ענף נוסף"
+
+msgid "A little space for new growth. Undo is available for 8 seconds."
+msgstr "התפנה מקום לצמיחה חדשה. אפשר לבטל את הגיזום במשך 8 שניות."
+
+msgid "The branch is back."
+msgstr "הענף חזר למקומו."
+
+msgid "Reset replaces this tree. Tap Reset tree again to confirm."
+msgstr "האיפוס יחליף את העץ הנוכחי. לאישור, יש ללחוץ שוב על איפוס העץ."
+
+msgid "Welcome back. Your tree rested through the long absence."
+msgstr "טוב שחזרת. בזמן ההיעדרות הארוכה העץ נכנס למנוחה."
+
+msgid "Welcome back. %.1f days have passed for your tree."
+msgstr "טוב שחזרת. עברו %.1f ימים בחיי העץ."
+
+msgid "This tree needs a species pack that is not installed. Save preserved."
+msgstr "חבילת המין של העץ הזה אינה מותקנת. השמירה נשמרה ללא שינוי."
+
+msgid "DEVELOPER STUDIO"
+msgstr "כלי פיתוח"
+
+msgid "Close"
+msgstr "סגירה"
+
+msgid "Pause simulation"
+msgstr "השהיית הסימולציה"
+
+msgid "Resume simulation"
+msgstr "המשך הסימולציה"
+
+msgid "+1 hour"
+msgstr "הוספת שעה"
+
+msgid "+1 day"
+msgstr "הוספת יום"
+
+msgid "+1 week"
+msgstr "הוספת שבוע"
+
+msgid "+1 month"
+msgstr "הוספת חודש"
+
+msgid "Time buttons advance BIOLOGICAL time.\nNormal rate: 1 real hour = 1 biological day."
+msgstr "הכפתורים מקדמים את הזמן הביולוגי של העץ.\nבקצב הרגיל: שעה אמיתית = יום בחיי העץ."
+
+msgid "Soil moisture"
+msgstr "לחות האדמה"
+
+msgid "Nutrients"
+msgstr "דשן"
+
+msgid "Light"
+msgstr "אור"
+
+msgid "Damage"
+msgstr "פגיעה בעץ"
+
+msgid "Restore"
+msgstr "שיקום העץ"
+
+msgid "Spawn growth"
+msgstr "יצירת צמיחה"
+
+msgid "Reset tree…"
+msgstr "איפוס העץ…"
+
+msgid "Day %.2f | %d branches | %d leaves\nMoisture %.3f | nutrients %.3f\nRoots %.3f | energy %.3f | stress %.3f\nPruning stress %.3f | light %.2f"
+msgstr "יום %.2f | ענפים: %d | עלים: %d\nלחות: %.3f | דשן: %.3f\nשורשים: %.3f | אנרגיה: %.3f | עקה: %.3f\nעקת גיזום: %.3f | אור: %.2f"
+
+msgid "ID ← parent | length | radius | buds\n"
+msgstr "מזהה ← ענף אב | אורך | רדיוס | ניצנים\n"
+
+msgid "Save is protected. Reset explicitly to start a new tree."
+msgstr "השמירה מוגנת. כדי להתחיל עץ חדש יש לאפס אותו במפורש."
+
+msgid "Refused invalid save state."
+msgstr "השמירה לא בוצעה כי נתוני העץ אינם תקינים."
+
+msgid "Could not write save file (%d)."
+msgstr "לא ניתן לכתוב את קובץ השמירה (קוד %d)."
+
+msgid "Save verification failed."
+msgstr "בדיקת תקינות השמירה נכשלה."
+
+msgid "Could not preserve previous save."
+msgstr "לא ניתן לגבות את השמירה הקודמת."
+
+msgid "Could not replace save file."
+msgstr "לא ניתן להחליף את קובץ השמירה."
+
+msgid "This save belongs to a newer version. It has been preserved."
+msgstr "השמירה נוצרה בגרסה חדשה יותר של המשחק. הקובץ נשמר ללא שינוי."
+
+msgid "Recovered the tree from a backup."
+msgstr "העץ שוחזר מעותק הגיבוי."
+
+msgid "Save could not be read. Original files were preserved."
+msgstr "לא ניתן לקרוא את השמירה. הקבצים המקוריים נשמרו ללא שינוי."
+
+msgid "Purchases are not enabled in this prototype."
+msgstr "רכישות אינן זמינות בגרסת הניסוי."
+

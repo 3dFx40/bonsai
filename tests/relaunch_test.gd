@@ -27,6 +27,8 @@ func run() -> void:
 	check(not first.tree.branches.has(3), "Reopened app must preserve cut")
 	check(first.tree.age_days >= 1, "Reopened app must process one hour offline")
 	check(first.settings.sound and first.settings.quality == "Low", "Reopened app must restore player settings")
+	check(first.settings.language in ["en", "he"], "Legacy saves must receive a supported language")
+	first._language("he")
 	first._save()
 	var age: float = first.tree.age_days
 	first.queue_free()
@@ -36,6 +38,7 @@ func run() -> void:
 	root.add_child(second)
 	await process_frame
 	check(is_equal_approx(second.tree.age_days, age), "Second launch must not replay offline time twice")
+	check(second.settings.language == "he" and TranslationServer.get_locale().begins_with("he"), "Selected Hebrew must survive reopening")
 	second.queue_free()
 	await process_frame
 	for suffix in ["", ".bak", ".tmp"]:

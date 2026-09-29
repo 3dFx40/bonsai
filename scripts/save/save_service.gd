@@ -4,6 +4,7 @@ extends RefCounted
 const VERSION := 1
 var path := "user://grove.json"
 var last_error := ""
+var last_error_args: Array = []
 var read_only := false
 var recovered := false
 
@@ -17,6 +18,7 @@ func make_document(trees: Array, active: String, settings: Dictionary, timestamp
 		"owned_trees": rows.map(func(row): return row.id)}
 
 func write_document(document: Dictionary) -> bool:
+	last_error_args = []
 	if read_only:
 		last_error = "Save is protected. Reset explicitly to start a new tree."
 		return false
@@ -25,7 +27,8 @@ func write_document(document: Dictionary) -> bool:
 		return false
 	var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
 	if file == null:
-		last_error = "Could not write save file (%d)." % FileAccess.get_open_error()
+		last_error = "Could not write save file (%d)."
+		last_error_args = [FileAccess.get_open_error()]
 		return false
 	file.store_string(JSON.stringify(document))
 	file.flush()
@@ -46,6 +49,7 @@ func write_document(document: Dictionary) -> bool:
 
 func load_document() -> Dictionary:
 	last_error = ""
+	last_error_args = []
 	recovered = false
 	read_only = false
 	if FileAccess.file_exists(path):
@@ -101,6 +105,8 @@ func valid(data: Dictionary) -> bool:
 	if not _number(data.get("pending_days")) or data.pending_days < 0 or data.pending_days >= 0.25: return false
 	if not data.get("settings") is Dictionary: return false
 	var settings: Dictionary = data.settings
+	# Optional in v1: older saves remain valid and receive the device-language default.
+	if settings.has("language") and settings.language not in ["he", "en"]: return false
 	if not _number(settings.get("real_seconds_per_day")) or settings.real_seconds_per_day < 60 or settings.real_seconds_per_day > 86400: return false
 	if not settings.get("sound") is bool or not settings.get("quality") in ["Low", "Medium", "High"]: return false
 	var ids: Array = []
