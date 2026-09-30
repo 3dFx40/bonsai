@@ -333,7 +333,7 @@ func _action() -> void:
 			sound.play_cue("fertilize")
 			hud.message("A small dose, for the days ahead." if tree.nutrients < 1 else "There is already plenty of food in this soil.")
 		"prune":
-			var changed := tree.prune(renderer.selected_id) if hud.cut_mode.selected == 0 else tree.trim(renderer.selected_id, hud.cut_slider.value / 100)
+			var changed := tree.prune(renderer.selected_id) if hud.cut_mode == 0 else tree.trim(renderer.selected_id, hud.cut_slider.value / 100)
 			if changed:
 				sound.play_cue("prune")
 				_offer_undo(snapshot)
@@ -521,9 +521,9 @@ func _preview() -> void:
 	if selected < 0 or not tree.branches.has(selected): return
 	var b: BonsaiBranch = tree.branches[selected]
 	if mode == "prune":
-		renderer.cut_fraction = (0.0 if hud.cut_mode.selected == 0 else hud.cut_slider.value / 100.0) if b.parent_id >= 0 else -1.0
+		renderer.cut_fraction = (0.0 if hud.cut_mode == 0 else hud.cut_slider.value / 100.0) if b.parent_id >= 0 else -1.0
 		renderer.select(selected)
-		if hud.cut_mode.selected == 1 and b.parent_id >= 0:
+		if hud.cut_mode == 1 and b.parent_id >= 0:
 			hud.action.disabled = b.length * renderer.cut_fraction < 0.025
 			hud.set_action("Shorten branch · remove %d shoots", [tree.cut_descendants(selected, renderer.cut_fraction).size()])
 		elif b.parent_id >= 0:

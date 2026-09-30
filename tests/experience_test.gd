@@ -18,7 +18,7 @@ func run() -> void:
 	var initial: Dictionary = game.tree.to_data()
 	game._tool("prune")
 	game.renderer.select(3)
-	game.hud.cut_mode.select(1)
+	game.hud.set_cut_mode(1)
 	game.hud.cut_slider.value = 60
 	game._preview()
 	check(game.tree.to_data() == initial, "Cut preview cannot change the tree")

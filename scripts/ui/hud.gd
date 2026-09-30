@@ -39,7 +39,8 @@ var quality_button: Button
 var language_picker: OptionButton
 var name_edit: LineEdit
 var prune_controls: VBoxContainer
-var cut_mode: OptionButton
+var cut_mode := 0
+var cut_buttons: Array[Button] = []
 var cut_slider: HSlider
 var cut_label: Label
 var modal: ColorRect
@@ -54,6 +55,7 @@ var welcome_label: Label
 var comparison: Button
 var creation_button: Button
 var quit_button: Button
+var version_label: Label
 var _state: BonsaiTree
 var _message_key := "A little attention, every day."
 var _message_args: Array = []
@@ -199,14 +201,16 @@ func _ready() -> void:
 	detail = _label("A little attention, every day.", body, 20)
 	prune_controls = VBoxContainer.new()
 	body.add_child(prune_controls)
-	cut_mode = OptionButton.new()
-	cut_mode.custom_minimum_size.y = 60
-	cut_mode.add_item("Remove whole branch")
-	cut_mode.add_item("Shorten branch")
-	prune_controls.add_child(cut_mode)
+	var cut_choices := HBoxContainer.new()
+	cut_choices.add_theme_constant_override("separation", 10)
+	prune_controls.add_child(cut_choices)
+	for index in 2:
+		var choice := _button("Whole branch" if index == 0 else "Branch segment", cut_choices, set_cut_mode.bind(index))
+		choice.toggle_mode = true
+		choice.set_pressed_no_signal(index == cut_mode)
+		cut_buttons.append(choice)
 	cut_label = _label("", prune_controls, 19)
 	cut_slider = _slider(prune_controls, 20, 90, 65)
-	cut_mode.item_selected.connect(func(_index): _cut_options(); preview_changed.emit())
 	cut_slider.value_changed.connect(func(_value): _cut_options(); preview_changed.emit())
 	var actions := HBoxContainer.new()
 	body.add_child(actions)
@@ -274,7 +278,8 @@ func _build_modal() -> void:
 	scroll.add_child(modal_body)
 	settings_body = _section()
 	creation_button = _button("Create a new tree", settings_body, func(): creation_requested.emit())
-	_label("Version 0.3.1", settings_body, 18)
+	version_label = _label("", settings_body, 18)
+	version_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	_label("Your tree's name", settings_body)
 	name_edit = LineEdit.new()
 	name_edit.max_length = 40
@@ -399,9 +404,16 @@ func set_tool(tool: String) -> void:
 	_cut_options()
 	_safe_layout()
 
+func set_cut_mode(index: int) -> void:
+	if index not in [0, 1]: return
+	cut_mode = index
+	for i in cut_buttons.size(): cut_buttons[i].set_pressed_no_signal(i == index)
+	_cut_options()
+	preview_changed.emit()
+
 func _cut_options() -> void:
-	cut_slider.visible = cut_mode.selected == 1
-	cut_label.visible = cut_mode.selected == 1
+	cut_slider.visible = cut_mode == 1
+	cut_label.visible = cut_mode == 1
 	cut_label.text = tr("Keep %d%% of the branch") % int(cut_slider.value)
 
 func update_state(tree: BonsaiTree) -> void:
@@ -440,6 +452,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready(): _retranslate()
 
 func _retranslate() -> void:
+	version_label.text = tr("Version %s") % ProjectSettings.get_setting("application/config/version", "")
 	language_picker.select(0 if TranslationServer.get_locale().begins_with("he") else 1)
 	if _state != null: update_state(_state)
 	message(_message_key, _message_args)

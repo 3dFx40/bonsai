@@ -83,6 +83,29 @@ func run() -> void:
 	touch(0, button_point, false)
 	await process_frame
 	check(game.tree.moisture > moisture, "Touch action must actually water")
+	game._tool("prune")
+	game.renderer.select(3)
+	game._selection()
+	await process_frame
+	await process_frame
+	var prune_snapshot: Dictionary = game.tree.to_data()
+	for index in [1, 0, 1, 0, 1, 0]:
+		button_point = game.hud.cut_buttons[index].get_global_rect().get_center()
+		touch(0, button_point, true)
+		touch(0, button_point, false)
+		await process_frame
+		await process_frame
+		check(game.hud.cut_mode == index, "Touch must select both pruning modes without a popup")
+		check(game.hud.cut_buttons[index].button_pressed and not game.hud.cut_buttons[1 - index].button_pressed, "Exactly one pruning mode remains selected")
+		check(game.hud.cut_slider.visible == (index == 1), "Segment mode reveals length control")
+		check(is_equal_approx(game.renderer.cut_fraction, game.hud.cut_slider.value / 100.0 if index == 1 else 0.0), "Touch mode selection updates cut preview")
+		check(orbit.fingers.is_empty() and not orbit.mouse_down, "Pruning UI does not capture camera touches")
+	check(game.tree.to_data() == prune_snapshot, "Changing pruning mode never cuts a branch")
+	button_point = game.hud.buttons.inspect.get_global_rect().get_center()
+	touch(0, button_point, true)
+	touch(0, button_point, false)
+	await process_frame
+	check(game.mode == "inspect", "Toolbar remains responsive after repeated pruning mode changes")
 	game._tool("inspect")
 	var before: Dictionary = game.tree.to_data()
 	game._suspend()

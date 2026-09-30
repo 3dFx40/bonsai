@@ -471,5 +471,11 @@ msgstr "צור עץ חדש"
 msgid "Close app"
 msgstr "סגירת האפליקציה"
 
-msgid "Version 0.3.1"
-msgstr "גרסה 0.3.1"
+msgid "Version %s"
+msgstr "גרסה %s"
+
+msgid "Whole branch"
+msgstr "ענף שלם"
+
+msgid "Branch segment"
+msgstr "מקטע מהענף"
