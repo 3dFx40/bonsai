@@ -27,6 +27,9 @@ var pending_restore: Dictionary = {}
 var comparison_index := -1
 var showing_memory := false
 var comparison_memory: Dictionary = {}
+var creator: BonsaiCreator
+var creating := false
+var creation_camera: Dictionary = {}
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
@@ -43,13 +46,14 @@ func _ready() -> void:
 		saves.path = "user://automation-grove.json"
 	var loaded := {} if automation else saves.load_document()
 	var first_visit: bool = loaded.is_empty() and not saves.read_only
+	creating = first_visit and not automation
 	if first_visit: settings.onboarded = false
 	var welcome := "A little attention, every day."
 	var welcome_args: Array = []
 	if not loaded.is_empty():
 		settings = loaded.settings
 		for row: Dictionary in loaded.trees:
-			if row.species != sim.species.id:
+			if row.species not in BonsaiCatalog.SPECIES:
 				saves.read_only = true
 				welcome = "This tree needs a species pack that is not installed. Save preserved."
 				trees.clear()
@@ -60,6 +64,7 @@ func _ready() -> void:
 				if item.id == loaded.active_tree: tree = item
 			clock.pending_days = loaded.pending_days
 			last_wall = loaded.last_real_timestamp
+	sim.species = BonsaiCatalog.profile(tree.species_id)
 	if trees.is_empty():
 		tree.acquired_at = platform.unix_time()
 		trees = [tree]
@@ -112,6 +117,13 @@ func _ready() -> void:
 	hud.memory_selected.connect(_show_memory)
 	hud.comparison_requested.connect(_compare)
 	hud.overlay_changed.connect(_overlay)
+	hud.creation_requested.connect(_begin_creation)
+	hud.quit_requested.connect(_quit)
+	creator = BonsaiCreator.new()
+	add_child(creator)
+	creator.preview_requested.connect(_creation_preview)
+	creator.confirmed.connect(_finish_creation)
+	creator.canceled.connect(_cancel_creation)
 	file_dialog = FileDialog.new()
 	file_dialog.access = FileDialog.ACCESS_FILESYSTEM
 	file_dialog.use_native_dialog = true
@@ -126,13 +138,15 @@ func _ready() -> void:
 		debug_panel.command.connect(_debug)
 	_apply_quality()
 	_refresh()
-	if tree.memories.is_empty() and not saves.read_only: tree.remember("First portrait")
+	if tree.memories.is_empty() and not saves.read_only and not creating: tree.remember("First portrait")
 	if not first_visit and last_wall > 0:
 		hud.welcome("Since your last visit: %d new leaves.", [maxi(0, tree.leaf_count() - previous_leaves)])
 	if saves.last_error.is_empty(): hud.message(welcome, welcome_args)
 	else: hud.message(saves.last_error, saves.last_error_args)
 	_save()
-	if not settings.get("onboarded", true) and not automation: hud.open_panel("guide", true)
+	if creating:
+		_begin_creation()
+	elif not settings.get("onboarded", true) and not automation: hud.open_panel("guide", true)
 	if "--capture" in OS.get_cmdline_user_args():
 		if "--capture-debug" in OS.get_cmdline_user_args(): _toggle_debug()
 		for i in range(30):
@@ -145,8 +159,84 @@ func _ready() -> void:
 		await get_tree().process_frame
 		_smoke()
 
+func _begin_creation() -> void:
+	if saves.read_only or trees.size() >= 32: return
+	var first := creating
+	if not first: _save()
+	hud.close_panel()
+	_clear_undo()
+	comparison_index = -1
+	showing_memory = false
+	comparison_memory.clear()
+	hud.comparison.hide()
+	renderer.select(-1)
+	renderer.cut_fraction = -1
+	creating = true
+	hud.root.hide()
+	creation_camera = {"yaw": orbit.yaw, "pitch": orbit.pitch, "distance": orbit.distance, "target": orbit.target}
+	orbit.yaw = 0.2
+	orbit.pitch = 0.17
+	orbit.distance = 7.0
+	orbit.target = Vector3(0, 0.55, 0)
+	orbit.cinematic = false
+	orbit.set_input_enabled(true)
+	creator.open(hud.root.theme, not first)
+	_creation_preview("ficus_microcarpa", "slate_rectangle")
+
+func _creation_preview(species: String, pot: String) -> void:
+	if not creating: return
+	var preview := BonsaiCatalog.create(species, pot)
+	if preview == null: return
+	renderer.rebuild(preview)
+	studio.set_pot(pot)
+	studio.set_moisture(preview.moisture)
+
+func _finish_creation(species: String, pot: String, tree_name: String) -> void:
+	if not creating: return
+	var created := BonsaiCatalog.create(species, pot)
+	if created == null: return
+	created.id = "%s-%d" % [species, Time.get_ticks_usec()]
+	created.display_name = tree_name.substr(0, 40)
+	created.acquired_at = platform.unix_time()
+	# The initial placeholder has never been saved or cared for.
+	if not creator.can_cancel: trees.clear()
+	trees.append(created)
+	tree = created
+	clock.pending_days = 0
+	last_wall = platform.unix_time()
+	last_tick = Time.get_ticks_msec()
+	save_elapsed = 0
+	creating = false
+	creator.hide()
+	hud.root.show()
+	_restore_creation_camera()
+	tree.remember("First portrait")
+	_tool("inspect")
+	_refresh()
+	_save()
+	if not settings.get("onboarded", true): hud.open_panel("guide", true)
+
+func _cancel_creation() -> void:
+	if not creating or not creator.can_cancel: return
+	creating = false
+	creator.hide()
+	hud.root.show()
+	_restore_creation_camera()
+	last_tick = Time.get_ticks_msec()
+	last_wall = platform.unix_time()
+	_tool("inspect")
+	_refresh()
+
+func _restore_creation_camera() -> void:
+	if creation_camera.is_empty(): return
+	orbit.yaw = creation_camera.yaw
+	orbit.pitch = creation_camera.pitch
+	orbit.distance = creation_camera.distance
+	orbit.target = creation_camera.target
+	creation_camera.clear()
+
 func _process(delta: float) -> void:
-	if hud == null or suspended: return
+	if hud == null or suspended or creating: return
 	if not undo_data.is_empty() and Time.get_ticks_msec() >= undo_until:
 		undo_data.clear()
 		hud.undo.visible = false
@@ -162,59 +252,57 @@ func _process(delta: float) -> void:
 		save_elapsed = 0
 
 func _refresh() -> void:
+	sim.species = BonsaiCatalog.profile(tree.species_id)
 	if not showing_memory: renderer.rebuild(tree)
+	studio.set_pot(str(comparison_memory.tree.pot) if showing_memory else tree.pot_id)
 	studio.set_moisture(float(comparison_memory.tree.moisture) if showing_memory else tree.moisture)
 	hud.update_state(tree)
-	if mode in ["prune", "shape"] and comparison_index < 0: _preview()
+	hud.creation_button.disabled = saves.read_only or trees.size() >= 32
+	if mode == "prune" and comparison_index < 0: _preview()
 	if debug_panel != null: debug_panel.update_state(tree)
 
 func _tool(value: String) -> void:
+	if creating: return
 	comparison_index = -1
 	comparison_memory.clear()
 	showing_memory = false
 	hud.comparison.hide()
 	renderer.cut_fraction = -1
 	renderer.rebuild(tree)
-	hud.reset_shape()
 	studio.set_moisture(tree.moisture)
+	studio.set_pot(tree.pot_id)
 	mode = value
 	hud.set_tool(mode)
 	orbit.cinematic = mode == "camera"
 	if mode == "prune":
 		hud.message("Amber shows the cut. Tap again to select an overlapping branch.")
 		_selection()
-	elif mode == "shape":
-		hud.message("Turn and tilt a branch, then apply. Preview does not change your tree.")
-		_selection()
 	elif mode == "water": hud.message("Water slowly. Let the soil breathe between visits.")
 	elif mode == "fertilize": hud.message("A small dose supports growth. Too much stresses roots.")
 	elif mode == "inspect": hud.message("Hold a branch to inspect. Drag to turn your tree.")
 
 func _tap(at: Vector2, held: bool) -> void:
-	if hud.modal.visible or comparison_index >= 0: return
+	if creating or hud.modal.visible or comparison_index >= 0: return
 	if debug_panel != null and debug_panel.visible: return
 	if mode == "camera": return
 	if mode == "water" or mode == "fertilize":
 		# The explicit action button avoids accidental care while navigating.
 		return
-	hud.reset_shape()
 	renderer.select(renderer.pick(at, orbit.camera))
 	_selection(held)
 
 func _selection(held := false) -> void:
 	var selected := renderer.selected_id
 	if selected < 0:
-		if mode in ["prune", "shape"]:
+		if mode == "prune":
 			hud.action.disabled = true
-			hud.set_action("Select a branch to cut" if mode == "prune" else "Select a branch to shape")
+			hud.set_action("Select a branch to cut")
 		return
 	var b: BonsaiBranch = tree.branches[selected]
 	if mode == "prune":
 		hud.action.disabled = b.parent_id < 0
 		if b.parent_id < 0: hud.set_action("Keep the main trunk")
 		else: hud.set_action("Cut branch · %d segments", [tree.descendants(selected).size()])
-		_preview()
-	elif mode == "shape":
 		_preview()
 	else:
 		var condition := "Healthy" if b.health > 0.7 else "Under stress"
@@ -226,10 +314,11 @@ func _clear_undo() -> void:
 	hud.undo.visible = false
 
 func _action() -> void:
+	if creating: return
 	if saves.read_only or comparison_index >= 0:
 		hud.message("Save is protected. Restore a compatible version before making changes.")
 		return
-	var snapshot := tree.to_data() if mode in ["prune", "shape"] else {}
+	var snapshot := tree.to_data() if mode == "prune" else {}
 	_clear_undo()
 	match mode:
 		"water":
@@ -252,11 +341,6 @@ func _action() -> void:
 				hud.action.disabled = true
 				hud.set_action("Select another branch")
 				hud.message("Space for new growth. You can undo this change for 15 seconds.")
-		"shape":
-			if tree.shape(renderer.selected_id, deg_to_rad(hud.horizontal.value), deg_to_rad(hud.vertical.value)):
-				_offer_undo(snapshot)
-				hud.reset_shape()
-				hud.message("The new shape is saved. You can undo it for 15 seconds.")
 	_refresh()
 	_save()
 
@@ -271,7 +355,7 @@ func _undo() -> void:
 	_save()
 
 func _save() -> void:
-	if automation: return
+	if automation or creating: return
 	# Account for time since the latest tick before stamping the snapshot.
 	var ticks := Time.get_ticks_msec()
 	if not suspended and undo_data.is_empty():
@@ -293,6 +377,10 @@ func _suspend() -> void:
 
 func _resume() -> void:
 	if not suspended: return
+	if creating:
+		last_tick = Time.get_ticks_msec()
+		suspended = false
+		return
 	var now := platform.unix_time()
 	clock.advance(tree, sim, maxf(0, now - last_wall), true)
 	last_wall = maxf(last_wall, now)
@@ -302,6 +390,10 @@ func _resume() -> void:
 	_save()
 
 func _back() -> void:
+	if creating:
+		if creator.step == 0 and not creator.can_cancel: _quit()
+		else: creator.go_back()
+		return
 	if hud.modal.visible:
 		hud.close_panel()
 		return
@@ -437,19 +529,12 @@ func _preview() -> void:
 		elif b.parent_id >= 0:
 			hud.action.disabled = false
 			hud.set_action("Cut branch · %d segments", [tree.descendants(selected).size()])
-	elif mode == "shape":
-		var preview := BonsaiTree.from_data(tree.to_data(false))
-		preview.shape(selected, deg_to_rad(hud.horizontal.value), deg_to_rad(hud.vertical.value))
-		renderer.rebuild(preview)
-		hud.action.disabled = b.parent_id < 0 or (hud.horizontal.value == 0 and hud.vertical.value == 0)
-		hud.set_action("Keep the main trunk" if b.parent_id < 0 else "Apply shape")
 
 func _overlay(open: bool) -> void:
 	orbit.set_input_enabled(not open)
 	if open:
 		renderer.cut_fraction = -1
 		renderer.rebuild(tree)
-		hud.reset_shape()
 		pending_restore.clear()
 	else:
 		_preview()
@@ -488,6 +573,7 @@ func _compare() -> void:
 	renderer.select(-1)
 	renderer.rebuild(displayed)
 	studio.set_moisture(displayed.moisture)
+	studio.set_pot(displayed.pot_id)
 	hud.comparison.text = tr("Day %d · Show today's tree") % (int(memory.day) + 1) if showing_memory else tr("Today · Show saved portrait")
 
 func _backup_dialog(importing: bool) -> void:
@@ -523,7 +609,7 @@ func _restore_backup() -> void:
 	for i in document.trees.size():
 		if document.trees[i].id == document.active_tree:
 			var active := BonsaiTree.from_data(document.trees[i])
-			restored_clock.advance(active, sim, maxf(0, now - document.last_real_timestamp), true)
+			restored_clock.advance(active, BonsaiSimulation.new(BonsaiCatalog.profile(active.species_id)), maxf(0, now - document.last_real_timestamp), true)
 			document.trees[i] = active.to_data()
 	document.last_real_timestamp = maxf(now, document.last_real_timestamp)
 	document.pending_days = restored_clock.pending_days

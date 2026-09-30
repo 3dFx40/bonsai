@@ -31,6 +31,22 @@ func run() -> void:
 	await process_frame
 	await process_frame
 	var orbit: BonsaiCamera = game.orbit
+	# Background geometry must never block the tree during a full orbit.
+	for zoom in [2.65, 7.0]:
+		for tilt in [0.07, 0.68]:
+			for angle in range(-360, 361, 30):
+				orbit.distance = zoom
+				orbit.pitch = tilt
+				orbit.yaw = deg_to_rad(angle)
+				orbit._update_camera(1)
+				for mesh: MeshInstance3D in game.studio.find_children("*", "MeshInstance3D", true, false):
+					var bounds: AABB = mesh.global_transform * mesh.get_aabb()
+					check(bounds.intersects_segment(orbit.camera.global_position, orbit.target) == null,
+						"Studio must not hide the tree at %d degrees, zoom %.2f, tilt %.2f" % [angle, zoom, tilt])
+	orbit.yaw = 0.2
+	orbit.pitch = 0.17
+	orbit.distance = 7.0
+	orbit._update_camera(1)
 	var start_yaw := orbit.yaw
 	touch(0, Vector2(300, 400), true)
 	drag(0, Vector2(400, 430), Vector2(100, 30))

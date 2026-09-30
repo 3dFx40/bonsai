@@ -3,6 +3,9 @@ extends Node3D
 
 var soil: MeshInstance3D
 var sun: DirectionalLight3D
+var planter: MeshInstance3D
+var pebbles: MultiMeshInstance3D
+var pot_id := ""
 
 static func material(color: Color, roughness: float = 0.8) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
@@ -44,7 +47,8 @@ func _ready() -> void:
 	add_child(sun)
 	var wall := material(Color("999d91"))
 	box(Vector3(0, -0.68, 0), Vector3(20, 0.12, 20), material(Color("a9a392")))
-	box(Vector3(0, 3, -3.6), Vector3(20, 8, 0.12), wall)
+	# Keep the backdrop beyond the camera's maximum seven-unit orbit.
+	box(Vector3(0, 3, -8.0), Vector3(20, 8, 0.12), wall)
 	var wood := material(Color("514539"))
 	box(Vector3(0, -0.12, 0), Vector3(3.6, 0.16, 2.15), wood)
 	box(Vector3(0, -0.23, 0), Vector3(3.15, 0.07, 1.9), material(Color("302d26")))
@@ -53,9 +57,9 @@ func _ready() -> void:
 			box(Vector3(x, -0.46, z), Vector3(0.15, 0.6, 0.15), wood)
 	# Raised, open ceramic planter; the procedural tree starts at y=0.3.
 	var ceramic := material(Color("495551"), 0.42)
-	put(_pot_mesh(), Vector3.ZERO, ceramic)
+	planter = put(_pot_mesh(), Vector3.ZERO, ceramic)
 	soil = box(Vector3(0, 0.28, 0), Vector3(1.38, 0.035, 0.79), material(Color("302920")))
-	var pebbles := MultiMeshInstance3D.new()
+	pebbles = MultiMeshInstance3D.new()
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
@@ -80,18 +84,53 @@ func _ready() -> void:
 	add_child(pebbles)
 	# Shoji-inspired window, deliberately geometry rather than a large texture.
 	var paper := material(Color("e9e7d4"))
-	box(Vector3(-3.6, 2.7, -3.5), Vector3(2.5, 4.1, 0.08), paper)
+	box(Vector3(-3.6, 2.7, -7.9), Vector3(2.5, 4.1, 0.08), paper)
 	var frame := material(Color("777765"))
 	for x in [-4.85, -4.02, -3.19, -2.35]:
-		box(Vector3(x, 2.7, -3.42), Vector3(0.045, 4.15, 0.045), frame)
+		box(Vector3(x, 2.7, -7.82), Vector3(0.045, 4.15, 0.045), frame)
 	for y in [0.65, 1.68, 2.71, 3.74, 4.77]:
-		box(Vector3(-3.6, y, -3.42), Vector3(2.55, 0.045, 0.045), frame)
+		box(Vector3(-3.6, y, -7.82), Vector3(2.55, 0.045, 0.045), frame)
 
-func _pot_mesh() -> ArrayMesh:
+func set_pot(id: String) -> void:
+	if pot_id == id: return
+	pot_id = id
+	var rounded := id in ["terracotta_round", "ivory_round"]
+	planter.mesh = _pot_mesh(rounded)
+	planter.material_override = material(BonsaiCatalog.POT_COLORS.get(id, Color("495551")), 0.8 if id == "terracotta_round" else 0.42)
+	if rounded:
+		var disk := CylinderMesh.new()
+		disk.top_radius = 0.5
+		disk.bottom_radius = 0.5
+		disk.height = 0.035
+		disk.radial_segments = 48
+		soil.mesh = disk
+		soil.scale = Vector3(1.38, 1, 0.79)
+	else:
+		var rectangle := BoxMesh.new()
+		rectangle.size = Vector3(1.38, 0.035, 0.79)
+		soil.mesh = rectangle
+		soil.scale = Vector3.ONE
+	# Keep the same gravel positions between previews; mask the round edge.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 8271
+	for i in pebbles.multimesh.instance_count:
+		var size := rng.randf_range(0.006, 0.017)
+		var pos := Vector3(rng.randf_range(-0.66, 0.66), 0.303, rng.randf_range(-0.37, 0.37))
+		if rounded and pow(pos.x / 0.66, 2) + pow(pos.z / 0.37, 2) > 1: size = 0
+		pebbles.multimesh.set_instance_transform(i, Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * size), pos))
+		rng.randf()
+
+func _pot_mesh(rounded := false) -> ArrayMesh:
 	var profile := [Vector3(1.40, 0.02, 0.80), Vector3(1.48, 0.06, 0.88), Vector3(1.63, 0.29, 1.03), Vector3(1.61, 0.34, 1.01), Vector3(1.46, 0.34, 0.86), Vector3(1.43, 0.12, 0.83)]
 	var rings: Array = []
 	for dimensions: Vector3 in profile:
 		var ring: Array[Vector3] = []
+		if rounded:
+			for j in 24:
+				var angle := j * TAU / 24
+				ring.append(Vector3(cos(angle) * dimensions.x * 0.5, dimensions.y, sin(angle) * dimensions.z * 0.5))
+			rings.append(ring)
+			continue
 		var radius := 0.12
 		for corner in 4:
 			var angle := corner * PI * 0.5

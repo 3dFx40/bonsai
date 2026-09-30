@@ -16,15 +16,6 @@ func run() -> void:
 	await process_frame
 	await process_frame
 	var initial: Dictionary = game.tree.to_data()
-	game._tool("shape")
-	game.renderer.select(3)
-	game.hud.horizontal.value = 25
-	check(game.tree.to_data() == initial, "Shaping preview cannot mutate the saved tree")
-	check(not game.renderer.tree.point(3, 1).is_equal_approx(game.tree.point(3, 1)), "Preview is visible in renderer")
-	game._action()
-	check(not game.tree.point(3, 1).is_equal_approx(BonsaiTree.from_data(initial).point(3, 1)), "Apply commits actual branch geometry")
-	game._undo()
-	check(game.tree.to_data() == initial, "Undo restores all tree data")
 	game._tool("prune")
 	game.renderer.select(3)
 	game.hud.cut_mode.select(1)
@@ -88,10 +79,10 @@ func run() -> void:
 		game._refresh()
 		for language in ["he", "en"]:
 			game._language(language)
-			for state in ["inspect", "water", "prune", "shape", "guide", "settings", "journal"]:
+			for state in ["inspect", "water", "prune", "guide", "settings", "journal"]:
 				game.hud.close_panel()
-				game._tool(state if state in ["inspect", "water", "prune", "shape"] else "inspect")
-				if state in ["prune", "shape"]:
+				game._tool(state if state in ["inspect", "water", "prune"] else "inspect")
+				if state == "prune":
 					game.renderer.select(3)
 					game._selection()
 				if state in ["guide", "settings", "journal"]: game.hud.open_panel(state)

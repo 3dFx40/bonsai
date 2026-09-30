@@ -85,7 +85,7 @@ func read_backup(filename: String) -> Dictionary:
 	var document := _read(filename)
 	if document.is_empty(): return {}
 	for row: Dictionary in document.trees:
-		if row.species != "ficus_microcarpa": return {}
+		if row.species not in BonsaiCatalog.SPECIES or row.pot not in BonsaiCatalog.POTS: return {}
 	return document
 
 func export_backup(filename: String, document: Dictionary) -> bool:

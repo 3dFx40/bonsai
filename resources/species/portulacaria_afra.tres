@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BonsaiSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/simulation/species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "portulacaria_afra"
+display_name = "Dwarf jade"
+moisture_min = 0.18
+moisture_max = 0.65
+water_use = 0.007
+light_requirement = 0.85
+humidity_preference = 0.4
+growth_speed = 0.013
+internode_length = 0.065
+leaf_size = 0.65
+branching_tendency = 0.085
+stress_tolerance = 0.9
+leaf_lifespan_days = 180.0

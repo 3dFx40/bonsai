@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BonsaiSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/simulation/species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "ulmus_parvifolia"
+display_name = "Chinese elm"
+moisture_min = 0.32
+moisture_max = 0.82
+water_use = 0.016
+light_requirement = 0.8
+humidity_preference = 0.55
+growth_speed = 0.022
+internode_length = 0.075
+leaf_size = 0.62
+branching_tendency = 0.15
+seasonality = 0.15
+leaf_lifespan_days = 100.0

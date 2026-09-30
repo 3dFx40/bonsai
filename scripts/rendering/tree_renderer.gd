@@ -83,6 +83,9 @@ func _tube(st: SurfaceTool, points: Array[Vector3], radius: float, sides: int = 
 
 func rebuild(state: BonsaiTree) -> void:
 	tree = state
+	var jade := state.species_id == "portulacaria_afra"
+	var elm := state.species_id == "ulmus_parvifolia"
+	branches_mesh.material_override.albedo_color = Color("95896e") if elm else (Color("a9977b") if jade else Color("9a886b"))
 	samples.clear()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -99,9 +102,11 @@ func rebuild(state: BonsaiTree) -> void:
 			var angle: float = leaf.angle
 			var tilt := -0.20 + sin(angle * 3.0) * 0.35 + (1.0 - health) * 0.9 + maxf(0, 0.3 - tree.moisture)
 			var basis := Basis(Vector3.UP, angle) * Basis(Vector3.RIGHT, tilt)
-			basis = basis.scaled(Vector3.ONE * float(leaf.size))
+			var shape := Vector3(1.3, 1, 0.68) if jade else (Vector3(0.8, 1, 1) if elm else Vector3.ONE)
+			basis = basis.scaled(shape * float(leaf.size))
 			transforms.append(Transform3D(basis, tree.point(b.id, leaf.at)))
 			var green := Color("354c27").lerp(Color("688141"), (sin(angle * 6) + 1) * 0.5)
+			if jade: green = green.lerp(Color("60925d"), 0.5)
 			green = green.lerp(Color("b7a051"), clampf((1 - health) * 1.5 + maxf(0, 0.4 - float(tree.environment.light)), 0, 0.9))
 			colors.append(green)
 	for root: Dictionary in tree.roots:

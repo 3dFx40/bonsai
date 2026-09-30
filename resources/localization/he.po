@@ -63,8 +63,8 @@ msgstr "מתחילים בהתבוננות. גוררים כדי לסובב את �
 msgid "Water when the soil is dry. Fertilizer is occasional; adding more does not mean faster growth."
 msgstr "משקים כשהאדמה יבשה. מדשנים רק מדי פעם; יותר דשן לא מבטיח יותר צמיחה."
 
-msgid "Prune to make space. Amber branches show what will be removed. Shape lets you turn a branch before applying the change."
-msgstr "גוזמים כדי לפנות מקום. החלקים שיוסרו מסומנים בכתום. בכלי העיצוב אפשר לסובב ענף ולראות את התוצאה לפני האישור."
+msgid "Prune to make space. Amber branches show what will be removed."
+msgstr "גוזמים כדי לפנות מקום. החלקים שיוסרו מסומנים בכתום."
 
 msgid "Your tree grows between visits. Changes accumulate over hours. Long absences are protected, and the tree can recover."
 msgstr "העץ גדל גם בין ביקורים. השינוי מצטבר לאורך שעות. בהיעדרות ארוכה העץ נכנס למנוחה ויכול להתאושש כשתחזרו."
@@ -413,3 +413,63 @@ msgstr "לא ניתן לקרוא את השמירה. הקבצים המקוריי�
 
 msgid "Purchases are not enabled in this prototype."
 msgstr "רכישות אינן זמינות בגרסת הניסוי."
+
+msgid "Dwarf jade"
+msgstr "פורטולקריה"
+
+msgid "Chinese elm"
+msgstr "אולמוס סיני"
+
+msgid "Slate ceramic"
+msgstr "קרמיקה בצבע צפחה"
+
+msgid "Round terracotta"
+msgstr "טרקוטה עגולה"
+
+msgid "Ivory ceramic"
+msgstr "קרמיקה בצבע שנהב"
+
+msgid "Blue glazed ceramic"
+msgstr "קרמיקה כחולה"
+
+msgid "A broad canopy with glossy leaves. A forgiving first tree."
+msgstr "צמרת רחבה ועלים מבריקים. עץ נוח להתחלה."
+
+msgid "A compact succulent with fleshy leaves. Enjoys drier soil."
+msgstr "צמח קומפקטי עם עלים בשרניים. מסתדר עם אדמה יבשה יותר."
+
+msgid "An airy tree with small leaves and fine branching."
+msgstr "עץ עדין עם עלים קטנים וענפים דקים."
+
+msgid "Choose a plant and a planter. Make it yours."
+msgstr "בוחרים צמח ואדנית, ויוצרים עץ משלכם."
+
+msgid "1 / 2 · Choose your plant"
+msgstr "1 / 2 · בחירת הצמח"
+
+msgid "2 / 2 · Choose your planter"
+msgstr "2 / 2 · בחירת האדנית"
+
+msgid "Select a plant to see a preview."
+msgstr "בחרו צמח כדי לראות איך הוא נראה."
+
+msgid "Your tree's name (optional)"
+msgstr "שם לעץ שלכם (לא חובה)"
+
+msgid "Choose a planter"
+msgstr "לבחירת האדנית"
+
+msgid "Start growing"
+msgstr "מתחילים לגדל"
+
+msgid "Back"
+msgstr "חזרה"
+
+msgid "Create a new tree"
+msgstr "צור עץ חדש"
+
+msgid "Close app"
+msgstr "סגירת האפליקציה"
+
+msgid "Version 0.3.1"
+msgstr "גרסה 0.3.1"

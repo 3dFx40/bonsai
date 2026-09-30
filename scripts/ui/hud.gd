@@ -18,6 +18,8 @@ signal portrait_requested
 signal memory_selected(index: int)
 signal comparison_requested
 signal overlay_changed(open: bool)
+signal creation_requested
+signal quit_requested
 
 var root: Control
 var date_label: Label
@@ -40,9 +42,6 @@ var prune_controls: VBoxContainer
 var cut_mode: OptionButton
 var cut_slider: HSlider
 var cut_label: Label
-var shape_controls: VBoxContainer
-var horizontal: HSlider
-var vertical: HSlider
 var modal: ColorRect
 var modal_body: VBoxContainer
 var modal_title: Label
@@ -53,6 +52,8 @@ var restore_body: VBoxContainer
 var journal_list: VBoxContainer
 var welcome_label: Label
 var comparison: Button
+var creation_button: Button
+var quit_button: Button
 var _state: BonsaiTree
 var _message_key := "A little attention, every day."
 var _message_args: Array = []
@@ -113,6 +114,32 @@ func _ready() -> void:
 		theme.set_stylebox("focus", type, style(Color(0.72, 0.8, 0.53, 0.25)))
 	theme.set_stylebox("panel", "PanelContainer", style(Color("202e28"), 24))
 	root.theme = theme
+	# Separate layer keeps the app close control available above every screen.
+	var close_layer := CanvasLayer.new()
+	close_layer.layer = 5
+	add_child(close_layer)
+	var close_root := Control.new()
+	close_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	close_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	close_root.layout_direction = Control.LAYOUT_DIRECTION_LTR
+	close_root.theme = theme
+	close_layer.add_child(close_root)
+	quit_button = Button.new()
+	quit_button.text = "×"
+	quit_button.tooltip_text = "Close app"
+	quit_button.add_theme_font_size_override("font_size", 30)
+	for state in ["normal", "hover", "pressed", "focus"]:
+		var compact := style(Color("36473c") if state == "normal" else Color("50664e"), 12)
+		compact.content_margin_left = 4
+		compact.content_margin_right = 4
+		compact.content_margin_top = 2
+		compact.content_margin_bottom = 2
+		quit_button.add_theme_stylebox_override(state, compact)
+	close_root.add_child(quit_button)
+	quit_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	quit_button.offset_left = -68
+	quit_button.offset_right = -16
+	quit_button.pressed.connect(func(): quit_requested.emit())
 	top = MarginContainer.new()
 	top.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	top.offset_left = 28
@@ -165,7 +192,7 @@ func _ready() -> void:
 	var toolbar := HBoxContainer.new()
 	toolbar.add_theme_constant_override("separation", 6)
 	body.add_child(toolbar)
-	for entry in [["inspect", "Observe"], ["water", "Water"], ["fertilize", "Feed"], ["prune", "Prune"], ["shape", "Shape"]]:
+	for entry in [["inspect", "Observe"], ["water", "Water"], ["fertilize", "Feed"], ["prune", "Prune"]]:
 		var b := _button(entry[1], toolbar, func(): tool_selected.emit(entry[0]))
 		b.toggle_mode = true
 		buttons[entry[0]] = b
@@ -181,14 +208,6 @@ func _ready() -> void:
 	cut_slider = _slider(prune_controls, 20, 90, 65)
 	cut_mode.item_selected.connect(func(_index): _cut_options(); preview_changed.emit())
 	cut_slider.value_changed.connect(func(_value): _cut_options(); preview_changed.emit())
-	shape_controls = VBoxContainer.new()
-	body.add_child(shape_controls)
-	_label("Turn left / right", shape_controls, 19)
-	horizontal = _slider(shape_controls, -40, 40, 0)
-	_label("Tilt down / up", shape_controls, 19)
-	vertical = _slider(shape_controls, -40, 40, 0)
-	horizontal.value_changed.connect(func(_value): preview_changed.emit())
-	vertical.value_changed.connect(func(_value): preview_changed.emit())
 	var actions := HBoxContainer.new()
 	body.add_child(actions)
 	action = _button("Tap a branch to look closer", actions, func(): action_requested.emit())
@@ -254,6 +273,8 @@ func _build_modal() -> void:
 	modal_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(modal_body)
 	settings_body = _section()
+	creation_button = _button("Create a new tree", settings_body, func(): creation_requested.emit())
+	_label("Version 0.3.1", settings_body, 18)
 	_label("Your tree's name", settings_body)
 	name_edit = LineEdit.new()
 	name_edit.max_length = 40
@@ -282,7 +303,7 @@ func _build_modal() -> void:
 	_label("A tree of your own", guide_body, 30)
 	_label("Start by looking. Drag to turn the tree and pinch to get closer. Tap a branch to inspect it.", guide_body)
 	_label("Water when the soil is dry. Fertilizer is occasional; adding more does not mean faster growth.", guide_body)
-	_label("Prune to make space. Amber branches show what will be removed. Shape lets you turn a branch before applying the change.", guide_body)
+	_label("Prune to make space. Amber branches show what will be removed.", guide_body)
 	_label("Your tree grows between visits. Changes accumulate over hours. Long absences are protected, and the tree can recover.", guide_body)
 	_label("The journal keeps the first portrait and your recent ones. Compare them to see your work over time.", guide_body)
 	_button("Start caring", guide_body, close_panel)
@@ -346,16 +367,18 @@ func _safe_layout() -> void:
 			var ratio := get_viewport().get_visible_rect().size.y / screen.y
 			inset_top = safe.position.y * ratio
 			inset_bottom = maxf(0, screen.y - safe.end.y) * ratio
-	top.offset_top = 24 + inset_top
+	top.offset_top = 76 + inset_top
+	quit_button.offset_top = 8 + inset_top
+	quit_button.offset_bottom = 60 + inset_top
 	bottom.offset_bottom = -20 - inset_bottom
-	var height := 510.0 if _mode in ["prune", "shape"] else 340.0
+	var height := 510.0 if _mode == "prune" else 340.0
 	bottom.offset_top = -minf(height, get_viewport().get_visible_rect().size.y * 0.49) - inset_bottom
 	view_exit.offset_bottom = -28 - inset_bottom
 	view_exit.offset_top = -100 - inset_bottom
 	comparison.offset_bottom = -115 - inset_bottom
 	comparison.offset_top = -190 - inset_bottom
 	var panel := modal.get_child(0) as Control
-	panel.offset_top = 40 + inset_top
+	panel.offset_top = 76 + inset_top
 	panel.offset_bottom = -40 - inset_bottom
 
 func set_tool(tool: String) -> void:
@@ -365,22 +388,16 @@ func set_tool(tool: String) -> void:
 	bottom.visible = tool != "camera"
 	view_exit.visible = tool == "camera"
 	prune_controls.visible = tool == "prune"
-	shape_controls.visible = tool == "shape"
 	advice.visible = tool in ["inspect", "water", "fertilize"]
 	action.visible = tool != "inspect"
-	action.disabled = tool in ["inspect", "prune", "shape"]
+	action.disabled = tool in ["inspect", "prune"]
 	match tool:
 		"water": set_action("Water the soil")
 		"fertilize": set_action("Add a small dose")
 		"prune": set_action("Select a branch to cut")
-		"shape": set_action("Select a branch to shape")
 		_: set_action("Tap a branch to look closer")
 	_cut_options()
 	_safe_layout()
-
-func reset_shape() -> void:
-	horizontal.set_value_no_signal(0)
-	vertical.set_value_no_signal(0)
 
 func _cut_options() -> void:
 	cut_slider.visible = cut_mode.selected == 1
@@ -389,10 +406,11 @@ func _cut_options() -> void:
 
 func update_state(tree: BonsaiTree) -> void:
 	_state = tree
-	title.text = tree.display_name if not tree.display_name.is_empty() else tr("Ficus microcarpa")
+	title.text = tree.display_name if not tree.display_name.is_empty() else tr(BonsaiCatalog.NAMES.get(tree.species_id, "Ficus microcarpa"))
 	title.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	date_label.text = tr("DAY %03d   ·   YOUR WINDOW STUDIO") % (int(tree.age_days) + 1)
-	var soil := "Dry" if tree.moisture < 0.28 else ("Waterlogged" if tree.moisture > 0.95 else "Moist")
+	var profile := BonsaiCatalog.profile(tree.species_id)
+	var soil := "Dry" if tree.moisture < (profile.moisture_min if profile != null else 0.28) else ("Waterlogged" if tree.moisture > 0.95 else "Moist")
 	var health := "Settling" if tree.pruning_stress > 0.15 else ("Needs care" if tree.stress > 0.4 else "Vigorous")
 	status.text = tr("Soil: %s   ·   %s") % [tr(soil), tr(health)]
 	advice.text = tr(tree.care_advice())

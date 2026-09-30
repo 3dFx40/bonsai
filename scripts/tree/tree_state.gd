@@ -130,7 +130,8 @@ func remember(label: String) -> bool:
 
 func care_advice() -> String:
 	if moisture > 0.95: return "The soil is saturated. Let it drain before watering again."
-	if moisture < 0.28: return "The soil is dry. One slow watering will help."
+	var profile := BonsaiCatalog.profile(species_id)
+	if moisture < (profile.moisture_min if profile != null else 0.28): return "The soil is dry. One slow watering will help."
 	if nutrients > 0.95: return "There is excess fertilizer. Stop feeding and give the roots time."
 	if environment.light < 0.35: return "Low light is slowing growth. Recovery takes time."
 	if pruning_stress > 0.15: return "New cuts are healing. Let the tree recover before shaping again."
