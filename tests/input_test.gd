@@ -101,6 +101,20 @@ func run() -> void:
 		check(is_equal_approx(game.renderer.cut_fraction, game.hud.cut_slider.value / 100.0 if index == 1 else 0.0), "Touch mode selection updates cut preview")
 		check(orbit.fingers.is_empty() and not orbit.mouse_down, "Pruning UI does not capture camera touches")
 	check(game.tree.to_data() == prune_snapshot, "Changing pruning mode never cuts a branch")
+	game.hud.set_cut_mode(1)
+	await process_frame
+	await process_frame
+	var slider_rect: Rect2 = game.hud.cut_slider.get_global_rect()
+	var slider_start := slider_rect.position + Vector2(slider_rect.size.x * 0.25, slider_rect.size.y * 0.5)
+	var slider_end := slider_rect.position + Vector2(slider_rect.size.x * 0.75, slider_rect.size.y * 0.5)
+	touch(0, slider_start, true)
+	var initial_cut: float = game.hud.cut_slider.value
+	drag(0, slider_end, slider_end - slider_start)
+	touch(0, slider_end, false)
+	check(not is_equal_approx(game.hud.cut_slider.value, initial_cut), "Finger drag must change segment length with mouse emulation disabled")
+	check(is_equal_approx(game.renderer.cut_fraction, game.hud.cut_slider.value / 100.0), "Finger drag updates pruning preview")
+	check(game.hud.cut_slider.get_meta("touch_index", -1) == -1 and orbit.fingers.is_empty(), "Slider release clears touch capture")
+	check(game.tree.to_data() == prune_snapshot, "Dragging segment length cannot mutate the tree")
 	button_point = game.hud.buttons.inspect.get_global_rect().get_center()
 	touch(0, button_point, true)
 	touch(0, button_point, false)

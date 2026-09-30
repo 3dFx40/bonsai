@@ -247,7 +247,24 @@ func _slider(parent: Node, minimum: float, maximum: float, value: float) -> HSli
 	slider.custom_minimum_size.y = 48
 	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	parent.add_child(slider)
+	slider.gui_input.connect(_slider_touch.bind(slider))
 	return slider
+
+func _slider_touch(event: InputEvent, slider: HSlider) -> void:
+	if event is InputEventScreenTouch:
+		if not event.pressed:
+			if slider.get_meta("touch_index", -1) == event.index: slider.set_meta("touch_index", -1)
+			return
+		if slider.get_meta("touch_index", -1) != -1: return
+		slider.set_meta("touch_index", event.index)
+	elif event is InputEventScreenDrag:
+		if slider.get_meta("touch_index", -1) != event.index: return
+	else: return
+	var margin := slider.get_theme_icon("grabber").get_width() * 0.5
+	var fraction := clampf((event.position.x - margin) / maxf(1, slider.size.x - 2 * margin), 0, 1)
+	if slider.is_layout_rtl(): fraction = 1 - fraction
+	slider.value = lerpf(slider.min_value, slider.max_value, fraction)
+	slider.accept_event()
 
 func _build_modal() -> void:
 	modal = ColorRect.new()
