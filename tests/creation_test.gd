@@ -38,7 +38,24 @@ func run() -> void:
 	game._back()
 	check(game.creator.step == 0 and game.creator.species_id == "portulacaria_afra", "Back preserves plant choice")
 	game.creator.next_button.pressed.emit()
-	game.creator.name_edit.text = "העץ שלי"
+	await process_frame
+	await process_frame
+	var scroll: ScrollContainer = game.creator.name_edit.get_parent().get_parent()
+	scroll.ensure_control_visible(game.creator.name_edit)
+	await process_frame
+	var tap := InputEventScreenTouch.new()
+	tap.position = game.creator.name_edit.get_global_rect().get_center()
+	tap.pressed = true
+	root.push_input(tap, true)
+	tap.pressed = false
+	root.push_input(tap, true)
+	check(game.creator.name_edit.has_focus() and game.creator.name_edit.is_editing(), "Native touch must focus the creator name field and enter editing")
+	for character in "העץ שלי":
+		var key := InputEventKey.new()
+		key.unicode = character.unicode_at(0)
+		key.pressed = true
+		root.push_input(key, true)
+	check(game.creator.name_edit.text == "העץ שלי", "Creator accepts actual keyboard events after native touch")
 	game.creator.next_button.pressed.emit()
 	check(not game.creating and game.hud.root.visible, "Finish enters game")
 	check(game.tree.species_id == "portulacaria_afra" and game.tree.pot_id == "terracotta_round", "Both choices become active tree")
@@ -53,7 +70,7 @@ func run() -> void:
 	root.add_child(game)
 	await process_frame
 	check(not game.creating and not game.saves.read_only, "Selected species can reopen normally")
-	check(game.tree.id == chosen_id and game.tree.pot_id == "terracotta_round", "Choices persist on restart")
+	check(game.tree.id == chosen_id and game.tree.pot_id == "terracotta_round" and game.tree.display_name == "העץ שלי", "Choices and typed name persist on restart")
 	check(game.sim.species.id == "portulacaria_afra" and game.studio.pot_id == "terracotta_round", "Reopen restores simulation and planter")
 	check(not game.saves.read_backup(filename).is_empty(), "New species supports backup import")
 	game._begin_creation()

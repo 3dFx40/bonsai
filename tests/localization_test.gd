@@ -19,6 +19,7 @@ func run() -> void:
 	check(game.settings.language == "he", "Language picker must select Hebrew")
 	check(game.hud.root.is_layout_rtl(), "Hebrew interface must mirror to RTL")
 	check(TranslationServer.translate("Water") == "השקיה", "Hebrew catalog must be loaded")
+	check(TranslationServer.translate("Compare portrait") == "השוואה לעץ של היום", "Portrait gallery action must be translated")
 	check(game.hud.status.text.contains("אדמה"), "Dynamic condition must be Hebrew")
 	game._tool("prune")
 	game.renderer.select(3)

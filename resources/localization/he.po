@@ -479,3 +479,6 @@ msgstr "ענף שלם"
 
 msgid "Branch segment"
 msgstr "מקטע מהענף"
+
+msgid "Compare portrait"
+msgstr "השוואה לעץ של היום"

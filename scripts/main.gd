@@ -251,11 +251,11 @@ func _process(delta: float) -> void:
 		_save()
 		save_elapsed = 0
 
-func _refresh() -> void:
+func _refresh(animate_water := false) -> void:
 	sim.species = BonsaiCatalog.profile(tree.species_id)
 	if not showing_memory: renderer.rebuild(tree)
 	studio.set_pot(str(comparison_memory.tree.pot) if showing_memory else tree.pot_id)
-	studio.set_moisture(float(comparison_memory.tree.moisture) if showing_memory else tree.moisture)
+	studio.set_moisture(float(comparison_memory.tree.moisture) if showing_memory else tree.moisture, animate_water and not showing_memory)
 	hud.update_state(tree)
 	hud.creation_button.disabled = saves.read_only or trees.size() >= 32
 	if mode == "prune" and comparison_index < 0: _preview()
@@ -329,19 +329,22 @@ func _action() -> void:
 			hud.message("Water settles into the soil." if tree.moisture < 1 else "The soil is saturated. Give it time to drain.")
 		"fertilize":
 			sim.fertilize(tree)
+			studio.feed()
 			tree.record("feed")
 			sound.play_cue("fertilize")
 			hud.message("A small dose, for the days ahead." if tree.nutrients < 1 else "There is already plenty of food in this soil.")
 		"prune":
+			var cut_at := tree.point(renderer.selected_id, hud.cut_slider.value / 100 if hud.cut_mode == 1 else 0.05) if tree.branches.has(renderer.selected_id) else Vector3.ZERO
 			var changed := tree.prune(renderer.selected_id) if hud.cut_mode == 0 else tree.trim(renderer.selected_id, hud.cut_slider.value / 100)
 			if changed:
+				studio.snip(cut_at)
 				sound.play_cue("prune")
 				_offer_undo(snapshot)
 				renderer.select(-1)
 				hud.action.disabled = true
 				hud.set_action("Select another branch")
 				hud.message("Space for new growth. You can undo this change for 15 seconds.")
-	_refresh()
+	_refresh(mode == "water")
 	_save()
 
 func _undo() -> void:

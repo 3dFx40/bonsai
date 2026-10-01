@@ -121,6 +121,39 @@ func run() -> void:
 	await process_frame
 	check(game.mode == "inspect", "Toolbar remains responsive after repeated pruning mode changes")
 	game._tool("inspect")
+	var naming_path := "user://naming-test-%d.json" % Time.get_ticks_usec()
+	game.saves.path = naming_path
+	game.automation = false
+	game.hud.open_panel("settings")
+	await process_frame
+	await process_frame
+	var field: LineEdit = game.hud.name_edit
+	field.clear()
+	button_point = field.get_global_rect().get_center()
+	touch(0, button_point, true)
+	touch(0, button_point, false)
+	check(field.has_focus() and field.is_editing(), "Native touch must focus settings name field and enter editing")
+	for character in "עץ יפני":
+		var key := InputEventKey.new()
+		key.unicode = character.unicode_at(0)
+		key.pressed = true
+		root.push_input(key, true)
+	check(field.text == "עץ יפני", "Settings name field accepts keyboard events after touch")
+	field.release_focus()
+	game.hud.update_state(game.tree)
+	check(field.text == "עץ יפני", "Simulation refresh cannot erase a draft after keyboard focus is lost")
+	var save_button: Button = field.get_parent().get_child(field.get_index() + 1)
+	button_point = save_button.get_global_rect().get_center()
+	touch(0, button_point, true)
+	touch(0, button_point, false)
+	await process_frame
+	check(game.tree.display_name == "עץ יפני" and not game.hud.modal.visible, "Touch Save name commits the typed name")
+	var saved: Dictionary = game.saves.load_document()
+	check(not saved.is_empty() and saved.trees[0].display_name == "עץ יפני", "Typed name is persisted to disk")
+	game.automation = true
+	for suffix in ["", ".bak", ".tmp"]:
+		if FileAccess.file_exists(naming_path + suffix): DirAccess.remove_absolute(naming_path + suffix)
+	check(orbit.fingers.is_empty() and not orbit.mouse_down, "Naming must not start a camera gesture")
 	var before: Dictionary = game.tree.to_data()
 	game._suspend()
 	game.last_wall -= 3600

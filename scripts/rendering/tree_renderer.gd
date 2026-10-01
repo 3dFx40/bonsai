@@ -8,14 +8,16 @@ var highlight: MeshInstance3D
 var foliage: MultiMeshInstance3D
 var leaf_mesh: ArrayMesh
 var samples: Dictionary = {}
+var tip_radii: Dictionary = {}
 var cut_fraction := -1.0
 var _last_pick := Vector2(-1000, -1000)
 var _pick_index := 0
+var _leaf_species := ""
 
 func _ready() -> void:
 	branches_mesh = MeshInstance3D.new()
-	var bark := BonsaiStudio.material(Color("9a886b"), 0.94)
-	bark.vertex_color_use_as_albedo = true
+	var bark := ShaderMaterial.new()
+	bark.shader = preload("res://assets/shaders/bark.gdshader")
 	branches_mesh.material_override = bark
 	add_child(branches_mesh)
 	highlight = MeshInstance3D.new()
@@ -26,27 +28,33 @@ func _ready() -> void:
 	highlight.material_override = selection
 	add_child(highlight)
 	foliage = MultiMeshInstance3D.new()
-	var mat := BonsaiStudio.material(Color.WHITE, 0.72)
-	mat.vertex_color_use_as_albedo = true
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://assets/shaders/leaf.gdshader")
 	foliage.material_override = mat
 	add_child(foliage)
 	leaf_mesh = _make_leaf()
 
-func _make_leaf() -> ArrayMesh:
+func _make_leaf(succulent := false, elm := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var edge := [Vector3(0, 0, 0), Vector3(-0.038, 0, 0.04), Vector3(-0.057, 0, 0.10), Vector3(-0.045, 0, 0.17), Vector3(0, -0.004, 0.23), Vector3(0.045, 0, 0.17), Vector3(0.057, 0, 0.10), Vector3(0.038, 0, 0.04)]
-	for i in edge.size():
-		st.set_color(Color("bfd898"))
-		st.add_vertex(Vector3(0, 0.016, 0.105))
-		st.set_color(Color("779156"))
-		st.add_vertex(edge[i])
-		st.add_vertex(edge[(i + 1) % edge.size()])
+	# Curved blade with a central ridge, rather than a flat triangle fan.
+	for row in range(8):
+		for col in range(2):
+			for corner in [Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(0, 1), Vector2(1, 0), Vector2(1, 1)]:
+				var uv := Vector2((col + corner.x) / 2.0, (row + corner.y) / 8.0)
+				var outline := pow(sin(uv.y * PI), 0.55 if succulent else 0.8)
+				if elm: outline *= 1.0 + cos(uv.y * PI * 8.0) * 0.055
+				var width := outline * 0.070
+				var x := (uv.x * 2.0 - 1.0) * width
+				var y := sin(uv.y * PI) * (0.012 + (0.026 if succulent else 0.015) * (1.0 - absf(uv.x * 2.0 - 1.0)))
+				st.set_uv(uv)
+				st.set_color(Color.WHITE)
+				st.add_vertex(Vector3(x, y, uv.y * 0.24))
+	st.index()
 	st.generate_normals()
 	return st.commit()
 
-func _tube(st: SurfaceTool, points: Array[Vector3], radius: float, sides: int = 12) -> void:
+func _tube(st: SurfaceTool, points: Array[Vector3], radius: float, sides: int = 12, wound := false, tip_radius := -1.0) -> void:
 	var rings: Array = []
 	var normals: Array = []
 	for i in points.size():
@@ -57,11 +65,14 @@ func _tube(st: SurfaceTool, points: Array[Vector3], radius: float, sides: int = 
 		var v := tangent.cross(u).normalized()
 		var ring: Array[Vector3] = []
 		var normal_ring: Array[Vector3] = []
-		var r := radius * lerpf(1.0, 0.45, float(i) / (points.size() - 1))
+		var t := float(i) / (points.size() - 1)
+		var end_radius := tip_radius if tip_radius > 0 else radius * 0.45
+		var r := lerpf(radius, end_radius, t) + radius * 0.18 * exp(-t * 12.0)
 		for j in sides:
 			var a := float(j) * TAU / sides
 			var n := u * cos(a) + v * sin(a)
-			ring.append(points[i] + n * r)
+			var ridge := 1.0 + sin(a * 5.0 + points[i].y * 3.0) * 0.035
+			ring.append(points[i] + n * r * ridge)
 			normal_ring.append(n)
 		rings.append(ring)
 		normals.append(normal_ring)
@@ -73,10 +84,13 @@ func _tube(st: SurfaceTool, points: Array[Vector3], radius: float, sides: int = 
 				var variation := 0.83 + 0.13 * sin(p.y * 43 + p.x * 95 + p.z * 68)
 				st.set_color(Color(variation, variation, variation, 1))
 				st.set_normal(normals[pair[0]][pair[1]])
+				st.set_uv(Vector2(float(j + (1 if pair[1] == next else 0)) / sides, float(pair[0]) / (points.size() - 1)))
 				st.add_vertex(rings[pair[0]][pair[1]])
 	var end := points.size() - 1
+	st.set_color(Color("e2c3a0") if wound else Color.WHITE)
 	for j in sides:
 		st.set_normal((points[end] - points[end - 1]).normalized())
+		st.set_uv(Vector2(0.5, 1.0))
 		st.add_vertex(points[end])
 		st.add_vertex(rings[end][(j + 1) % sides])
 		st.add_vertex(rings[end][j])
@@ -85,8 +99,18 @@ func rebuild(state: BonsaiTree) -> void:
 	tree = state
 	var jade := state.species_id == "portulacaria_afra"
 	var elm := state.species_id == "ulmus_parvifolia"
-	branches_mesh.material_override.albedo_color = Color("95896e") if elm else (Color("a9977b") if jade else Color("9a886b"))
+	if _leaf_species != state.species_id:
+		leaf_mesh = _make_leaf(jade, elm)
+		_leaf_species = state.species_id
+	branches_mesh.material_override.set_shader_parameter("bark_color", Color("71634e") if elm else (Color("948775") if jade else Color("857760")))
+	foliage.material_override.set_shader_parameter("succulent", 1.0 if jade else 0.0)
 	samples.clear()
+	tip_radii.clear()
+	for b: BonsaiBranch in tree.branches.values(): tip_radii[b.id] = b.thickness * 0.45
+	# A continuing leader meets its parent without a pinched neck.
+	for b: BonsaiBranch in tree.branches.values():
+		if b.parent_id >= 0 and b.attachment >= 0.98:
+			tip_radii[b.parent_id] = maxf(tip_radii[b.parent_id], b.thickness * 1.18)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var transforms: Array[Transform3D] = []
@@ -96,16 +120,17 @@ func rebuild(state: BonsaiTree) -> void:
 		for step in range(13):
 			points.append(tree.point(b.id, step / 12.0))
 		samples[b.id] = points
-		_tube(st, points, b.thickness)
+		_tube(st, points, b.thickness, 12, b.pruned, tip_radii[b.id])
 		for leaf: Dictionary in b.leaves:
 			var health: float = leaf.health
 			var angle: float = leaf.angle
 			var tilt := -0.20 + sin(angle * 3.0) * 0.35 + (1.0 - health) * 0.9 + maxf(0, 0.3 - tree.moisture)
-			var basis := Basis(Vector3.UP, angle) * Basis(Vector3.RIGHT, tilt)
+			var basis := Basis(Vector3.UP, angle) * Basis(Vector3.RIGHT, tilt) * Basis(Vector3.FORWARD, sin(angle * 7.0) * 0.35)
 			var shape := Vector3(1.3, 1, 0.68) if jade else (Vector3(0.8, 1, 1) if elm else Vector3.ONE)
-			basis = basis.scaled(shape * float(leaf.size))
+			basis = basis.scaled(shape * float(leaf.size) * (0.86 + 0.18 * (sin(angle * 13.0) + 1.0) * 0.5))
 			transforms.append(Transform3D(basis, tree.point(b.id, leaf.at)))
-			var green := Color("354c27").lerp(Color("688141"), (sin(angle * 6) + 1) * 0.5)
+			var green := Color("29452b").lerp(Color("627b3b"), (sin(angle * 6) + 1) * 0.5)
+			green = green.lerp(Color("8ba557"), clampf(1.0 - float(leaf.age) / 7.0, 0, 1) * 0.24)
 			if jade: green = green.lerp(Color("60925d"), 0.5)
 			green = green.lerp(Color("b7a051"), clampf((1 - health) * 1.5 + maxf(0, 0.4 - float(tree.environment.light)), 0, 0.9))
 			colors.append(green)
@@ -136,13 +161,13 @@ func select(id: int) -> void:
 	material.emission = material.albedo_color
 	if cut_fraction >= 0:
 		var ids := tree.descendants(selected_id) if cut_fraction == 0 else tree.cut_descendants(selected_id, cut_fraction)
-		for key in ids: _tube(st, samples[key], tree.branches[key].thickness * 1.13)
+		for key in ids: _tube(st, samples[key], tree.branches[key].thickness * 1.13, 12, false, tip_radii[key] * 1.13)
 		if cut_fraction > 0:
 			var points: Array[Vector3] = []
 			for step in range(13): points.append(tree.point(selected_id, lerpf(cut_fraction, 1, step / 12.0)))
-			_tube(st, points, tree.branches[selected_id].thickness * lerpf(1, 0.45, cut_fraction) * 1.13)
+			_tube(st, points, lerpf(tree.branches[selected_id].thickness, tip_radii[selected_id], cut_fraction) * 1.13, 12, false, tip_radii[selected_id] * 1.13)
 	else:
-		_tube(st, samples[selected_id], tree.branches[selected_id].thickness * 1.10)
+		_tube(st, samples[selected_id], tree.branches[selected_id].thickness * 1.10, 12, false, tip_radii[selected_id] * 1.10)
 	highlight.mesh = st.commit()
 
 func pick(screen: Vector2, camera: Camera3D) -> int:

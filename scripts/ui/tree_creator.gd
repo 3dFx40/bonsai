@@ -45,10 +45,11 @@ func _ready() -> void:
 	lower.add_child(panel)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
 	panel.add_child(scroll)
 	var body := VBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body.add_theme_constant_override("separation", 14)
+	body.add_theme_constant_override("separation", 12)
 	scroll.add_child(body)
 	heading = _label("", body, 28)
 	choices = GridContainer.new()
@@ -57,25 +58,25 @@ func _ready() -> void:
 	choices.add_theme_constant_override("v_separation", 10)
 	body.add_child(choices)
 	description = _label("", body, 20)
-	name_edit = LineEdit.new()
-	name_edit.max_length = 40
-	name_edit.placeholder_text = "Your tree's name (optional)"
-	name_edit.custom_minimum_size.y = 64
+	name_edit = BonsaiHUD.name_field(68)
 	body.add_child(name_edit)
+	name_edit.text_submitted.connect(func(_value: String): _next())
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 12)
 	body.add_child(actions)
 	back_button = BonsaiHUD.button("Back")
+	back_button.custom_minimum_size.y = 64
 	actions.add_child(back_button)
 	back_button.pressed.connect(go_back)
 	next_button = BonsaiHUD.button("Choose a planter")
+	next_button.custom_minimum_size.y = 64
 	actions.add_child(next_button)
 	next_button.pressed.connect(_next)
 	get_viewport().size_changed.connect(func(): lower.offset_top = -minf(460, get_viewport().get_visible_rect().size.y * 0.48))
 	_rebuild()
 	hide()
 
-func _label(text: String, parent: Node, size: int, color := Color("f3efe3")) -> Label:
+func _label(text: String, parent: Node, size: int, color := Color("293d34")) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -114,7 +115,11 @@ func _rebuild() -> void:
 		var button := BonsaiHUD.button(BonsaiCatalog.NAMES[id])
 		button.toggle_mode = true
 		button.set_pressed_no_signal(id == selected)
-		button.custom_minimum_size.y = 76
+		button.custom_minimum_size.y = 72
+		if step == 0:
+			button.icon = preload("res://assets/icons/feed.svg")
+			button.expand_icon = true
+			button.add_theme_constant_override("icon_max_width", 26)
 		if step == 1:
 			var swatch := ColorRect.new()
 			swatch.color = BonsaiCatalog.POT_COLORS[id]

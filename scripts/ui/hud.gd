@@ -79,12 +79,66 @@ static func style(color: Color, radius := 16) -> StyleBoxFlat:
 	box.content_margin_bottom = 12
 	return box
 
+static func studio_theme() -> Theme:
+	var theme := Theme.new()
+	theme.default_font_size = 22
+	theme.set_color("font_placeholder_color", "LineEdit", Color("778273"))
+	for type in ["Label", "Button", "OptionButton", "LineEdit"]:
+		theme.set_color("font_color", type, Color("293d34"))
+	for type in ["Button", "OptionButton", "LineEdit"]:
+		var normal := style(Color("e7e9df"), 14)
+		normal.border_color = Color("d7dccf")
+		normal.set_border_width_all(1)
+		theme.set_stylebox("normal", type, normal)
+		theme.set_stylebox("hover", type, style(Color("dce3d5"), 14))
+		theme.set_stylebox("pressed", type, style(Color("395346"), 14))
+		theme.set_color("font_pressed_color", type, Color("faf7ef"))
+		theme.set_color("font_hover_pressed_color", type, Color("faf7ef"))
+		theme.set_color("font_disabled_color", type, Color("939d90"))
+		var focus := style(Color(0, 0, 0, 0), 14)
+		focus.border_color = Color("9aa974")
+		focus.set_border_width_all(2)
+		theme.set_stylebox("focus", type, focus)
+		var disabled := style(Color("eeeee6"), 14)
+		theme.set_stylebox("disabled", type, disabled)
+	theme.set_color("icon_normal_color", "Button", Color("395346"))
+	theme.set_color("icon_hover_color", "Button", Color("395346"))
+	theme.set_color("icon_pressed_color", "Button", Color("faf7ef"))
+	theme.set_color("icon_hover_pressed_color", "Button", Color("faf7ef"))
+	var panel := style(Color("f7f5ec"), 26)
+	panel.content_margin_left = 24
+	panel.content_margin_right = 24
+	panel.content_margin_top = 20
+	panel.content_margin_bottom = 20
+	panel.shadow_color = Color(0.12, 0.18, 0.13, 0.14)
+	panel.shadow_size = 12
+	panel.shadow_offset = Vector2(0, 5)
+	theme.set_stylebox("panel", "PanelContainer", panel)
+	return theme
+
 static func button(text: String) -> Button:
 	var result := Button.new()
 	result.text = text
 	result.custom_minimum_size = Vector2(80, 68)
 	result.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return result
+
+static func name_field(height: float = 68) -> LineEdit:
+	var field := LineEdit.new()
+	field.max_length = 40
+	field.custom_minimum_size.y = height
+	field.placeholder_text = "Your tree's name (optional)"
+	# LineEdit expects mouse input for focus, but this app uses native touch.
+	# Enter editing locally so focus and the native keyboard work
+	# without enabling mouse emulation for camera and pruning gestures.
+	field.gui_input.connect(func(event: InputEvent):
+		if event is InputEventScreenTouch and event.pressed:
+			field.grab_focus()
+			field.edit()
+			if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
+				DisplayServer.virtual_keyboard_show(field.text, field.get_global_rect(), DisplayServer.KEYBOARD_TYPE_DEFAULT, field.max_length, field.caret_column)
+			field.accept_event())
+	return field
 
 func _label(text: String, parent: Node, font_size := 22) -> Label:
 	var label := Label.new()
@@ -105,16 +159,7 @@ func _ready() -> void:
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-	var theme := Theme.new()
-	theme.default_font_size = 22
-	for type in ["Label", "Button", "OptionButton", "LineEdit"]:
-		theme.set_color("font_color", type, Color("f3efe3"))
-	for type in ["Button", "OptionButton", "LineEdit"]:
-		theme.set_stylebox("normal", type, style(Color("36473c")))
-		theme.set_stylebox("hover", type, style(Color("50664e")))
-		theme.set_stylebox("pressed", type, style(Color("677e53")))
-		theme.set_stylebox("focus", type, style(Color(0.72, 0.8, 0.53, 0.25)))
-	theme.set_stylebox("panel", "PanelContainer", style(Color("202e28"), 24))
+	var theme := studio_theme()
 	root.theme = theme
 	# Separate layer keeps the app close control available above every screen.
 	var close_layer := CanvasLayer.new()
@@ -131,7 +176,7 @@ func _ready() -> void:
 	quit_button.tooltip_text = "Close app"
 	quit_button.add_theme_font_size_override("font_size", 30)
 	for state in ["normal", "hover", "pressed", "focus"]:
-		var compact := style(Color("36473c") if state == "normal" else Color("50664e"), 12)
+		var compact := style(Color("e7e9df") if state == "normal" else Color("dce3d5"), 12)
 		compact.content_margin_left = 4
 		compact.content_margin_right = 4
 		compact.content_margin_top = 2
@@ -153,13 +198,14 @@ func _ready() -> void:
 	top.add_child(header)
 	var nav := HBoxContainer.new()
 	header.add_child(nav)
-	var brand := _label("B O N S A I", nav, 20)
+	var brand := _label("B O N S A I", nav, 18)
 	brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	brand.add_theme_color_override("font_color", Color("304737"))
 	for b in [_button("Journal", nav, func(): open_panel("journal")), _button("Settings", nav, func(): open_panel("settings"))]:
 		b.size_flags_horizontal = Control.SIZE_SHRINK_END
-		b.custom_minimum_size.x = 136
-	title = _label("Ficus microcarpa", header, 38)
+		b.custom_minimum_size = Vector2(124, 56)
+		b.add_theme_font_size_override("font_size", 20)
+	title = _label("Ficus microcarpa", header, 36)
 	title.add_theme_color_override("font_color", Color("243a2b"))
 	date_label = _label("", header, 20)
 	date_label.add_theme_color_override("font_color", Color("41543f"))
@@ -184,21 +230,28 @@ func _ready() -> void:
 	scroll.add_child(body)
 	var line := HBoxContainer.new()
 	body.add_child(line)
-	status = _label("", line, 21)
+	status = _label("", line, 20)
 	status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var view := _button("View", line, func(): tool_selected.emit("camera"))
 	view.size_flags_horizontal = Control.SIZE_SHRINK_END
 	view.custom_minimum_size.x = 110
-	advice = _label("", body, 22)
-	advice.add_theme_color_override("font_color", Color("cbd7b4"))
+	view.custom_minimum_size.y = 48
+	advice = _label("", body, 21)
+	advice.add_theme_color_override("font_color", Color("647452"))
 	var toolbar := HBoxContainer.new()
 	toolbar.add_theme_constant_override("separation", 6)
 	body.add_child(toolbar)
 	for entry in [["inspect", "Observe"], ["water", "Water"], ["fertilize", "Feed"], ["prune", "Prune"]]:
 		var b := _button(entry[1], toolbar, func(): tool_selected.emit(entry[0]))
+		var icons := {"inspect": "observe", "water": "water", "fertilize": "feed", "prune": "prune"}
+		b.icon = load("res://assets/icons/%s.svg" % icons[entry[0]])
+		b.expand_icon = true
+		b.add_theme_constant_override("icon_max_width", 26)
+		b.add_theme_font_size_override("font_size", 20)
 		b.toggle_mode = true
 		buttons[entry[0]] = b
-	detail = _label("A little attention, every day.", body, 20)
+	detail = _label("A little attention, every day.", body, 19)
+	detail.add_theme_color_override("font_color", Color("68736a"))
 	prune_controls = VBoxContainer.new()
 	body.add_child(prune_controls)
 	var cut_choices := HBoxContainer.new()
@@ -215,10 +268,15 @@ func _ready() -> void:
 	var actions := HBoxContainer.new()
 	body.add_child(actions)
 	action = _button("Tap a branch to look closer", actions, func(): action_requested.emit())
+	action.add_theme_stylebox_override("normal", style(Color("395346"), 14))
+	action.add_theme_color_override("font_color", Color("faf7ef"))
+	action.add_theme_stylebox_override("hover", style(Color("4b6656"), 14))
+	action.add_theme_color_override("font_hover_color", Color("faf7ef"))
 	undo = _button("Undo change", actions, func(): undo_requested.emit())
 	undo.hide()
 	hint = _label("DRAG TO ORBIT  ·  PINCH TO ZOOM", body, 16)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_color_override("font_color", Color("7b8475"))
 	view_exit = _button("Back to care", root, func(): tool_selected.emit("inspect"))
 	view_exit.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	view_exit.offset_left = 100
@@ -268,7 +326,7 @@ func _slider_touch(event: InputEvent, slider: HSlider) -> void:
 
 func _build_modal() -> void:
 	modal = ColorRect.new()
-	modal.color = Color(0.08, 0.13, 0.10, 0.82)
+	modal.color = Color(0.08, 0.13, 0.10, 0.56)
 	modal.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(modal)
 	var panel := PanelContainer.new()
@@ -289,6 +347,7 @@ func _build_modal() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.follow_focus = true
 	column.add_child(scroll)
 	modal_body = VBoxContainer.new()
 	modal_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -298,10 +357,9 @@ func _build_modal() -> void:
 	version_label = _label("", settings_body, 18)
 	version_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	_label("Your tree's name", settings_body)
-	name_edit = LineEdit.new()
-	name_edit.max_length = 40
-	name_edit.custom_minimum_size.y = 68
+	name_edit = name_field()
 	settings_body.add_child(name_edit)
+	name_edit.text_submitted.connect(func(value: String): name_requested.emit(value.strip_edges()))
 	_button("Save name", settings_body, func(): name_requested.emit(name_edit.text.strip_edges()))
 	_label("Language", settings_body)
 	language_picker = OptionButton.new()
@@ -352,7 +410,10 @@ func open_panel(kind: String, first := false) -> void:
 	_first_guide = first
 	for section in [settings_body, guide_body, journal_body, restore_body]: section.hide()
 	match kind:
-		"settings": settings_body.show(); modal_title.text = "Settings"
+		"settings":
+			if _state != null: name_edit.text = _state.display_name
+			settings_body.show()
+			modal_title.text = "Settings"
 		"guide": guide_body.show(); modal_title.text = "Care guide"
 		"journal": journal_body.show(); modal_title.text = "Journal"; update_journal()
 		"restore": restore_body.show(); modal_title.text = "Restore backup"
@@ -372,7 +433,21 @@ func update_journal() -> void:
 	if _state == null: return
 	for i in range(_state.memories.size() - 1, -1, -1):
 		var memory: Dictionary = _state.memories[i]
-		_button(tr("Day %d · %d branches") % [int(memory.day) + 1, memory.tree.branches.size()], journal_list, func(): memory_selected.emit(i))
+		var card := PanelContainer.new()
+		card.add_theme_stylebox_override("panel", style(Color("e9ecdf"), 16))
+		journal_list.add_child(card)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 18)
+		card.add_child(row)
+		var preview := preload("res://scripts/ui/portrait_preview.gd").new()
+		preview.portrait = memory.tree
+		row.add_child(preview)
+		var caption := VBoxContainer.new()
+		caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		caption.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_child(caption)
+		_label(tr("Day %d · %d branches") % [int(memory.day) + 1, memory.tree.branches.size()], caption, 23)
+		_button("Compare portrait", caption, func(): memory_selected.emit(i))
 	_label("Recent care", journal_list, 26)
 	for i in range(_state.history.size() - 1, maxi(-1, _state.history.size() - 11), -1):
 		var event: Dictionary = _state.history[i]
@@ -393,7 +468,7 @@ func _safe_layout() -> void:
 	quit_button.offset_top = 8 + inset_top
 	quit_button.offset_bottom = 60 + inset_top
 	bottom.offset_bottom = -20 - inset_bottom
-	var height := 510.0 if _mode == "prune" else 340.0
+	var height := 540.0 if _mode == "prune" else (430.0 if _mode in ["water", "fertilize"] else (370.0 if detail.visible else 300.0))
 	bottom.offset_top = -minf(height, get_viewport().get_visible_rect().size.y * 0.49) - inset_bottom
 	view_exit.offset_bottom = -28 - inset_bottom
 	view_exit.offset_top = -100 - inset_bottom
@@ -411,6 +486,7 @@ func set_tool(tool: String) -> void:
 	view_exit.visible = tool == "camera"
 	prune_controls.visible = tool == "prune"
 	advice.visible = tool in ["inspect", "water", "fertilize"]
+	hint.visible = tool == "inspect"
 	action.visible = tool != "inspect"
 	action.disabled = tool in ["inspect", "prune"]
 	match tool:
@@ -443,7 +519,8 @@ func update_state(tree: BonsaiTree) -> void:
 	var health := "Settling" if tree.pruning_stress > 0.15 else ("Needs care" if tree.stress > 0.4 else "Vigorous")
 	status.text = tr("Soil: %s   ·   %s") % [tr(soil), tr(health)]
 	advice.text = tr(tree.care_advice())
-	if not name_edit.has_focus(): name_edit.text = tree.display_name
+	# Keep an unsaved draft even after the keyboard closes or Save gains focus.
+	if not settings_body.is_visible_in_tree(): name_edit.text = tree.display_name
 
 func welcome(key: String, args: Array = []) -> void:
 	_welcome_key = key
@@ -455,6 +532,8 @@ func message(key: String, args: Array = []) -> void:
 	_message_key = key
 	_message_args = args.duplicate()
 	detail.text = _format(key, args)
+	detail.visible = key not in ["A little attention, every day.", "Hold a branch to inspect. Drag to turn your tree."]
+	if modal != null: _safe_layout()
 
 func set_action(key: String, args: Array = []) -> void:
 	_action_key = key

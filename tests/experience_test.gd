@@ -30,10 +30,18 @@ func run() -> void:
 	game._rename("העץ שלי")
 	check(game.hud.title.text == "העץ שלי", "Personal name displays verbatim")
 	game._portrait()
+	game._tool("water")
+	game._action()
 	var before_compare: Dictionary = game.tree.to_data()
+	game.hud.open_panel("journal")
+	await process_frame
+	await process_frame
+	check(game.tree.to_data() == before_compare, "Opening rendered portraits must not change the living tree")
+	check(not game.orbit.input_enabled, "Portrait gallery blocks input to the living tree")
 	game._show_memory(0)
 	check(game.showing_memory and game.hud.comparison.visible, "Journal opens historical portrait")
 	var portrait_moisture: float = game.tree.memories[0].tree.moisture
+	check(game.studio.soil.material_override.albedo_color.is_equal_approx(Color("897356").lerp(Color("29281f"), portrait_moisture)), "Opening a portrait during watering cancels the live soil transition")
 	game.tree.moisture = 0.1
 	game._refresh()
 	check(game.studio.soil.material_override.albedo_color.is_equal_approx(Color("897356").lerp(Color("29281f"), portrait_moisture)), "Historical portrait retains its own soil color while live tree changes")
@@ -86,6 +94,8 @@ func run() -> void:
 					game.renderer.select(3)
 					game._selection()
 				if state in ["guide", "settings", "journal"]: game.hud.open_panel(state)
+				# Let care animations finish before capturing static interface states.
+				await create_timer(1.6).timeout
 				await process_frame
 				await process_frame
 				await RenderingServer.frame_post_draw
