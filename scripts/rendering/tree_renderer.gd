@@ -34,7 +34,7 @@ func _ready() -> void:
 	add_child(foliage)
 	leaf_mesh = _make_leaf()
 
-func _make_leaf(succulent := false, elm := false) -> ArrayMesh:
+func _make_leaf(succulent := false, elm := false, narrow := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	# Curved blade with a central ridge, rather than a flat triangle fan.
@@ -42,7 +42,7 @@ func _make_leaf(succulent := false, elm := false) -> ArrayMesh:
 		for col in range(2):
 			for corner in [Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(0, 1), Vector2(1, 0), Vector2(1, 1)]:
 				var uv := Vector2((col + corner.x) / 2.0, (row + corner.y) / 8.0)
-				var outline := pow(sin(uv.y * PI), 0.55 if succulent else 0.8)
+				var outline := pow(sin(uv.y * PI), 0.55 if succulent else (1.2 if narrow else 0.8))
 				if elm: outline *= 1.0 + cos(uv.y * PI * 8.0) * 0.055
 				var width := outline * 0.070
 				var x := (uv.x * 2.0 - 1.0) * width
@@ -97,12 +97,13 @@ func _tube(st: SurfaceTool, points: Array[Vector3], radius: float, sides: int = 
 
 func rebuild(state: BonsaiTree) -> void:
 	tree = state
-	var jade := state.species_id == "portulacaria_afra"
-	var elm := state.species_id == "ulmus_parvifolia"
+	var profile := BonsaiCatalog.profile(state.species_id)
+	var jade := profile.leaf_shape == "succulent"
+	var elm := profile.leaf_shape == "serrated"
 	if _leaf_species != state.species_id:
-		leaf_mesh = _make_leaf(jade, elm)
+		leaf_mesh = _make_leaf(jade, elm, profile.leaf_shape in ["olive", "willow"])
 		_leaf_species = state.species_id
-	branches_mesh.material_override.set_shader_parameter("bark_color", Color("71634e") if elm else (Color("948775") if jade else Color("857760")))
+	branches_mesh.material_override.set_shader_parameter("bark_color", profile.bark_color)
 	foliage.material_override.set_shader_parameter("succulent", 1.0 if jade else 0.0)
 	samples.clear()
 	tip_radii.clear()
@@ -126,10 +127,10 @@ func rebuild(state: BonsaiTree) -> void:
 			var angle: float = leaf.angle
 			var tilt := -0.20 + sin(angle * 3.0) * 0.35 + (1.0 - health) * 0.9 + maxf(0, 0.3 - tree.moisture)
 			var basis := Basis(Vector3.UP, angle) * Basis(Vector3.RIGHT, tilt) * Basis(Vector3.FORWARD, sin(angle * 7.0) * 0.35)
-			var shape := Vector3(1.3, 1, 0.68) if jade else (Vector3(0.8, 1, 1) if elm else Vector3.ONE)
+			var shape := profile.leaf_scale
 			basis = basis.scaled(shape * float(leaf.size) * (0.86 + 0.18 * (sin(angle * 13.0) + 1.0) * 0.5))
 			transforms.append(Transform3D(basis, tree.point(b.id, leaf.at)))
-			var green := Color("29452b").lerp(Color("627b3b"), (sin(angle * 6) + 1) * 0.5)
+			var green := profile.leaf_color.lerp(profile.leaf_color.lightened(0.22), (sin(angle * 6) + 1) * 0.5)
 			green = green.lerp(Color("8ba557"), clampf(1.0 - float(leaf.age) / 7.0, 0, 1) * 0.24)
 			if jade: green = green.lerp(Color("60925d"), 0.5)
 			green = green.lerp(Color("b7a051"), clampf((1 - health) * 1.5 + maxf(0, 0.4 - float(tree.environment.light)), 0, 0.9))

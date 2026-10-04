@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="BonsaiSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/simulation/species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "olea_europaea"
+display_name = "Olive"
+moisture_min = 0.22
+moisture_max = 0.70
+water_use = 0.008
+light_requirement = 0.85
+humidity_preference = 0.45
+growth_speed = 0.011
+internode_length = 0.065
+leaf_size = 0.85
+branching_tendency = 0.09
+pruning_response = 1.4
+leaf_lifespan_days = 160.0
+leaf_shape = "olive"
+leaf_scale = Vector3(0.50, 1, 0.85)
+leaf_color = Color(0.39, 0.46, 0.32, 1)
+bark_color = Color(0.45, 0.44, 0.37, 1)
+initial_length_scale = 0.85
+initial_thickness_scale = 1.25

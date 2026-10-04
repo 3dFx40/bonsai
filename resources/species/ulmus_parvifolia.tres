@@ -3,6 +3,11 @@
 [ext_resource type="Script" path="res://scripts/simulation/species.gd" id="1"]
 
 [resource]
+leaf_shape = "serrated"
+leaf_scale = Vector3(0.8, 1, 1)
+bark_color = Color(0.44, 0.39, 0.31, 1)
+initial_thickness_scale = 0.72
+branch_vertical_bias = 0.18
 script = ExtResource("1")
 id = "ulmus_parvifolia"
 display_name = "Chinese elm"

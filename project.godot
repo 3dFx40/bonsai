@@ -3,7 +3,7 @@ config_version=5
 
 [application]
 config/name="Bonsai"
-config/version="0.4.0"
+config/version="0.5.0"
 config/icon="res://assets/icon.svg"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
@@ -37,4 +37,4 @@ locale/include_text_server_data=true
 
 [bonsai]
 developer_tools=true
-real_seconds_per_day=3600.0
+real_seconds_per_day=10800.0

@@ -3,6 +3,12 @@
 [ext_resource type="Script" path="res://scripts/simulation/species.gd" id="1"]
 
 [resource]
+leaf_shape = "succulent"
+leaf_scale = Vector3(1.3, 1, 0.68)
+bark_color = Color(0.58, 0.53, 0.46, 1)
+initial_length_scale = 0.75
+initial_thickness_scale = 1.15
+initial_bend_scale = 0.75
 script = ExtResource("1")
 id = "portulacaria_afra"
 display_name = "Dwarf jade"

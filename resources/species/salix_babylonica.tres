@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="BonsaiSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/simulation/species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "salix_babylonica"
+display_name = "Weeping willow"
+moisture_min = 0.40
+moisture_max = 0.90
+water_use = 0.030
+light_requirement = 0.70
+humidity_preference = 0.70
+growth_speed = 0.030
+internode_length = 0.12
+leaf_size = 0.9
+branching_tendency = 0.18
+pruning_response = 2.1
+leaf_lifespan_days = 80.0
+leaf_shape = "willow"
+leaf_scale = Vector3(0.28, 1, 1.45)
+leaf_color = Color(0.31, 0.48, 0.20, 1)
+bark_color = Color(0.38, 0.33, 0.25, 1)
+initial_length_scale = 1.15
+initial_thickness_scale = 0.75
+branch_vertical_bias = -0.65

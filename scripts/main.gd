@@ -12,7 +12,7 @@ var sound: BonsaiSound
 var orbit: BonsaiCamera
 var hud: BonsaiHUD
 var debug_panel: BonsaiDebugPanel
-var settings := {"sound": false, "quality": "Medium", "real_seconds_per_day": 3600.0}
+var settings := {"sound": false, "quality": "Medium", "real_seconds_per_day": 10800.0}
 var mode := "inspect"
 var last_wall := 0.0
 var last_tick := 0
@@ -41,7 +41,7 @@ func _ready() -> void:
 	platform.resumed.connect(_resume)
 	platform.quit_requested.connect(_quit)
 	platform.back_requested.connect(_back)
-	settings.real_seconds_per_day = clampf(ProjectSettings.get_setting("bonsai/real_seconds_per_day", 3600), 60, 86400)
+	settings.real_seconds_per_day = clampf(ProjectSettings.get_setting("bonsai/real_seconds_per_day", 10800), 60, 86400)
 	if automation:
 		saves.path = "user://automation-grove.json"
 	var loaded := {} if automation else saves.load_document()
@@ -52,6 +52,7 @@ func _ready() -> void:
 	var welcome_args: Array = []
 	if not loaded.is_empty():
 		settings = loaded.settings
+		BonsaiClock.upgrade_rate(settings)
 		for row: Dictionary in loaded.trees:
 			if row.species not in BonsaiCatalog.SPECIES:
 				saves.read_only = true
@@ -79,7 +80,7 @@ func _ready() -> void:
 	clock.real_seconds_per_day = settings.real_seconds_per_day
 	var now := platform.unix_time()
 	if last_wall > 0:
-		var result := clock.advance(tree, sim, maxf(0, now - last_wall), true)
+		var result := clock.advance_grove(trees, tree, maxf(0, now - last_wall), true)
 		if result.dormant_days > 0:
 			welcome = "Welcome back. Your tree rested through the long absence."
 		elif result.days > 0:
@@ -100,6 +101,7 @@ func _ready() -> void:
 	orbit.tapped.connect(_tap)
 	hud = BonsaiHUD.new()
 	add_child(hud)
+	studio.daylight_changed.connect(hud.update_room_contrast)
 	hud.tool_selected.connect(_tool)
 	hud.action_requested.connect(_action)
 	hud.undo_requested.connect(_undo)
@@ -118,6 +120,7 @@ func _ready() -> void:
 	hud.comparison_requested.connect(_compare)
 	hud.overlay_changed.connect(_overlay)
 	hud.creation_requested.connect(_begin_creation)
+	hud.tree_selected.connect(_select_tree)
 	hud.quit_requested.connect(_quit)
 	creator = BonsaiCreator.new()
 	add_child(creator)
@@ -195,6 +198,7 @@ func _finish_creation(species: String, pot: String, tree_name: String) -> void:
 	if not creating: return
 	var created := BonsaiCatalog.create(species, pot)
 	if created == null: return
+	if creator.can_cancel: _settle_time()
 	created.id = "%s-%d" % [species, Time.get_ticks_usec()]
 	created.display_name = tree_name.substr(0, 40)
 	created.acquired_at = platform.unix_time()
@@ -202,7 +206,7 @@ func _finish_creation(species: String, pot: String, tree_name: String) -> void:
 	if not creator.can_cancel: trees.clear()
 	trees.append(created)
 	tree = created
-	clock.pending_days = 0
+	if not creator.can_cancel: clock.pending_days = 0
 	last_wall = platform.unix_time()
 	last_tick = Time.get_ticks_msec()
 	save_elapsed = 0
@@ -218,6 +222,7 @@ func _finish_creation(species: String, pot: String, tree_name: String) -> void:
 
 func _cancel_creation() -> void:
 	if not creating or not creator.can_cancel: return
+	_settle_time()
 	creating = false
 	creator.hide()
 	hud.root.show()
@@ -235,6 +240,27 @@ func _restore_creation_camera() -> void:
 	orbit.target = creation_camera.target
 	creation_camera.clear()
 
+func _select_tree(id: String) -> void:
+	if creating or suspended or saves.read_only: return
+	for specimen: BonsaiTree in trees:
+		if specimen.id != id: continue
+		_clear_undo()
+		_save()
+		tree = specimen
+		hud.close_panel()
+		renderer.select(-1)
+		_tool("inspect")
+		_refresh()
+		_save()
+		return
+
+func _settle_time() -> void:
+	var ticks := Time.get_ticks_msec()
+	if not suspended and undo_data.is_empty():
+		clock.advance_grove(trees, tree, maxf(0, ticks - last_tick) / 1000.0)
+		last_tick = ticks
+		last_wall = maxf(last_wall, platform.unix_time())
+
 func _process(delta: float) -> void:
 	if hud == null or suspended or creating: return
 	if not undo_data.is_empty() and Time.get_ticks_msec() >= undo_until:
@@ -242,7 +268,7 @@ func _process(delta: float) -> void:
 		hud.undo.visible = false
 	var ticks := Time.get_ticks_msec()
 	if ticks - last_tick >= 1000 and undo_data.is_empty():
-		var result := clock.advance(tree, sim, (ticks - last_tick) / 1000.0)
+		var result := clock.advance_grove(trees, tree, (ticks - last_tick) / 1000.0)
 		last_tick = ticks
 		last_wall = maxf(last_wall, platform.unix_time())
 		if result.steps > 0: _refresh()
@@ -257,6 +283,8 @@ func _refresh(animate_water := false) -> void:
 	studio.set_pot(str(comparison_memory.tree.pot) if showing_memory else tree.pot_id)
 	studio.set_moisture(float(comparison_memory.tree.moisture) if showing_memory else tree.moisture, animate_water and not showing_memory)
 	hud.update_state(tree)
+	hud.update_room_contrast(studio.daylight_factor)
+	hud.set_collection(trees, tree.id, saves.read_only)
 	hud.creation_button.disabled = saves.read_only or trees.size() >= 32
 	if mode == "prune" and comparison_index < 0: _preview()
 	if debug_panel != null: debug_panel.update_state(tree)
@@ -358,16 +386,13 @@ func _undo() -> void:
 	_save()
 
 func _save() -> void:
-	if automation or creating: return
+	if automation or (creating and (creator == null or not creator.can_cancel)): return
 	# Account for time since the latest tick before stamping the snapshot.
-	var ticks := Time.get_ticks_msec()
-	if not suspended and undo_data.is_empty():
-		clock.advance(tree, sim, maxf(0, ticks - last_tick) / 1000.0)
-		last_tick = ticks
-		last_wall = maxf(last_wall, platform.unix_time())
+	_settle_time()
 	# One portrait per real day at most, captured on the next save after returning.
-	if not saves.read_only and (tree.memories.is_empty() or tree.age_days - float(tree.memories.back().day) >= 86400 / clock.real_seconds_per_day):
-		tree.remember("Daily portrait")
+	for specimen: BonsaiTree in trees:
+		if not saves.read_only and (specimen.memories.is_empty() or specimen.age_days - float(specimen.memories.back().day) >= 86400 / clock.real_seconds_per_day):
+			specimen.remember("Daily portrait")
 	var document := saves.make_document(trees, tree.id, settings, last_wall, clock.pending_days)
 	if not saves.write_document(document) and hud != null:
 		hud.message(saves.last_error, saves.last_error_args)
@@ -380,15 +405,15 @@ func _suspend() -> void:
 
 func _resume() -> void:
 	if not suspended: return
-	if creating:
-		last_tick = Time.get_ticks_msec()
-		suspended = false
-		return
 	var now := platform.unix_time()
-	clock.advance(tree, sim, maxf(0, now - last_wall), true)
+	clock.advance_grove(trees, tree, maxf(0, now - last_wall), true)
 	last_wall = maxf(last_wall, now)
 	last_tick = Time.get_ticks_msec()
 	suspended = false
+	studio.update_local_time()
+	if creating:
+		_save()
+		return
 	_refresh()
 	_save()
 
@@ -604,16 +629,20 @@ func _backup_selected(filename: String) -> void:
 func _restore_backup() -> void:
 	if pending_restore.is_empty(): return
 	var document := pending_restore.duplicate(true)
-	# Advance the imported active tree once, before persisting its new timestamp.
+	# Advance every imported tree once before persisting the shared timestamp.
+	BonsaiClock.upgrade_rate(document.settings)
 	var restored_clock := BonsaiClock.new()
 	restored_clock.real_seconds_per_day = document.settings.real_seconds_per_day
 	restored_clock.pending_days = document.pending_days
 	var now := platform.unix_time()
-	for i in document.trees.size():
-		if document.trees[i].id == document.active_tree:
-			var active := BonsaiTree.from_data(document.trees[i])
-			restored_clock.advance(active, BonsaiSimulation.new(BonsaiCatalog.profile(active.species_id)), maxf(0, now - document.last_real_timestamp), true)
-			document.trees[i] = active.to_data()
+	var restored_trees: Array = []
+	var active: BonsaiTree
+	for row: Dictionary in document.trees:
+		var specimen := BonsaiTree.from_data(row)
+		restored_trees.append(specimen)
+		if specimen.id == document.active_tree: active = specimen
+	restored_clock.advance_grove(restored_trees, active, maxf(0, now - document.last_real_timestamp), true)
+	document.trees = restored_trees.map(func(specimen): return specimen.to_data())
 	document.last_real_timestamp = maxf(now, document.last_real_timestamp)
 	document.pending_days = restored_clock.pending_days
 	# Keep a separate recovery copy that the next autosave cannot rotate away.

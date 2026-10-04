@@ -19,11 +19,13 @@ signal memory_selected(index: int)
 signal comparison_requested
 signal overlay_changed(open: bool)
 signal creation_requested
+signal tree_selected(id: String)
 signal quit_requested
 
 var root: Control
 var date_label: Label
 var title: Label
+var brand: Label
 var status: Label
 var detail: Label
 var advice: Label
@@ -51,6 +53,11 @@ var guide_body: VBoxContainer
 var journal_body: VBoxContainer
 var restore_body: VBoxContainer
 var journal_list: VBoxContainer
+var collection_body: VBoxContainer
+var collection_list: VBoxContainer
+var collection_create: Button
+var _trees: Array = []
+var _active_tree := ""
 var welcome_label: Label
 var comparison: Button
 var creation_button: Button
@@ -198,10 +205,10 @@ func _ready() -> void:
 	top.add_child(header)
 	var nav := HBoxContainer.new()
 	header.add_child(nav)
-	var brand := _label("B O N S A I", nav, 18)
+	brand = _label("B O N S A I", nav, 18)
 	brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	brand.add_theme_color_override("font_color", Color("304737"))
-	for b in [_button("Journal", nav, func(): open_panel("journal")), _button("Settings", nav, func(): open_panel("settings"))]:
+	for b in [_button("Collection", nav, func(): open_panel("collection")), _button("Journal", nav, func(): open_panel("journal")), _button("Settings", nav, func(): open_panel("settings"))]:
 		b.size_flags_horizontal = Control.SIZE_SHRINK_END
 		b.custom_minimum_size = Vector2(124, 56)
 		b.add_theme_font_size_override("font_size", 20)
@@ -393,6 +400,12 @@ func _build_modal() -> void:
 	journal_list = VBoxContainer.new()
 	journal_list.add_theme_constant_override("separation", 12)
 	journal_body.add_child(journal_list)
+	collection_body = _section()
+	_label("All your trees keep growing between visits.", collection_body, 20)
+	collection_create = _button("Create a new tree", collection_body, func(): creation_requested.emit())
+	collection_list = VBoxContainer.new()
+	collection_list.add_theme_constant_override("separation", 14)
+	collection_body.add_child(collection_list)
 	restore_body = _section()
 	_label("Restore this backup? It replaces your current tree and settings. The previous save is kept as the local recovery copy.", restore_body)
 	_button("Restore this tree", restore_body, func(): restore_confirmed.emit())
@@ -408,7 +421,7 @@ func _section() -> VBoxContainer:
 
 func open_panel(kind: String, first := false) -> void:
 	_first_guide = first
-	for section in [settings_body, guide_body, journal_body, restore_body]: section.hide()
+	for section in [settings_body, guide_body, journal_body, restore_body, collection_body]: section.hide()
 	match kind:
 		"settings":
 			if _state != null: name_edit.text = _state.display_name
@@ -416,6 +429,7 @@ func open_panel(kind: String, first := false) -> void:
 			modal_title.text = "Settings"
 		"guide": guide_body.show(); modal_title.text = "Care guide"
 		"journal": journal_body.show(); modal_title.text = "Journal"; update_journal()
+		"collection": collection_body.show(); modal_title.text = tr("Collection"); update_collection()
 		"restore": restore_body.show(); modal_title.text = "Restore backup"
 	modal.show()
 	overlay_changed.emit(true)
@@ -425,6 +439,41 @@ func close_panel() -> void:
 	if _first_guide: tutorial_finished.emit()
 	_first_guide = false
 	overlay_changed.emit(false)
+
+func set_collection(trees: Array, active: String, protected: bool) -> void:
+	_trees = trees
+	_active_tree = active
+	collection_create.disabled = protected or trees.size() >= 32
+	collection_list.set_meta("protected", protected)
+	if collection_body.visible: update_collection()
+
+func update_collection() -> void:
+	for node in collection_list.get_children():
+		collection_list.remove_child(node)
+		node.queue_free()
+	for i in _trees.size():
+		var specimen: BonsaiTree = _trees[i]
+		var card := PanelContainer.new()
+		card.add_theme_stylebox_override("panel", style(Color("e9ecdf"), 16))
+		collection_list.add_child(card)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 16)
+		card.add_child(row)
+		var preview := preload("res://scripts/ui/portrait_preview.gd").new()
+		preview.portrait = specimen.to_data()
+		row.add_child(preview)
+		var caption := VBoxContainer.new()
+		caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(caption)
+		var species_name := tr(BonsaiCatalog.NAMES[specimen.species_id])
+		var name := specimen.display_name if not specimen.display_name.is_empty() else tr("Tree %d") % (i + 1)
+		var name_label := _label(name, caption, 24)
+		name_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		_label(species_name, caption, 20)
+		_label(tr("Day %d · %d leaves") % [int(specimen.age_days) + 1, specimen.leaf_count()], caption, 18)
+		var active := specimen.id == _active_tree
+		var select := _button("Current tree" if active else "Care for this tree", caption, func(): tree_selected.emit(specimen.id))
+		select.disabled = active or collection_list.get_meta("protected", false)
 
 func update_journal() -> void:
 	for node in journal_list.get_children():
@@ -522,6 +571,12 @@ func update_state(tree: BonsaiTree) -> void:
 	# Keep an unsaved draft even after the keyboard closes or Save gains focus.
 	if not settings_body.is_visible_in_tree(): name_edit.text = tree.display_name
 
+func update_room_contrast(daylight: float) -> void:
+	title.add_theme_color_override("font_color", Color("f2ead8").lerp(Color("243a2b"), daylight))
+	date_label.add_theme_color_override("font_color", Color("dedccb").lerp(Color("41543f"), daylight))
+	for label in [brand, welcome_label]:
+		label.add_theme_color_override("font_color", Color("e4e4d4").lerp(Color("304737"), daylight))
+
 func welcome(key: String, args: Array = []) -> void:
 	_welcome_key = key
 	_welcome_args = args
@@ -556,3 +611,6 @@ func _retranslate() -> void:
 	welcome(_welcome_key, _welcome_args)
 	_cut_options()
 	if journal_body.visible: update_journal()
+	if collection_body.visible:
+		modal_title.text = tr("Collection")
+		update_collection()

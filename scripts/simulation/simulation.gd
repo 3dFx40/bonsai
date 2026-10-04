@@ -86,8 +86,9 @@ func _step(tree: BonsaiTree, dt: float) -> void:
 func _sprout(tree: BonsaiTree, parent: BonsaiBranch) -> void:
 	var angle := tree.next_id * 2.399
 	var light: Array = tree.environment.light_direction
-	var direction := (parent.direction * 0.35 + Vector3(cos(angle) * 0.7, 0.8, sin(angle) * 0.7) + Vector3(light[0], light[1], light[2]) * 0.18).normalized()
+	var direction := (parent.direction * 0.35 + Vector3(cos(angle) * 0.7, 0.8 + species.branch_vertical_bias, sin(angle) * 0.7) + Vector3(light[0], light[1], light[2]) * 0.18).normalized()
 	var b := tree.add_branch(parent.id, 0.7 if parent.pruned else 0.95, direction, species.internode_length, maxf(0.005, parent.thickness * 0.3))
+	if species.leaf_shape == "willow": b.bend.y -= b.length * 0.3
 	tree.add_leaf(b, 0.6)
 	tree.add_leaf(b, 0.95)
 	parent.bud_charge -= 1

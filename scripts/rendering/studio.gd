@@ -1,8 +1,16 @@
 class_name BonsaiStudio
 extends Node3D
 
+signal daylight_changed(amount: float)
+
 var soil: MeshInstance3D
 var sun: DirectionalLight3D
+var room_environment: Environment
+var fill: OmniLight3D
+var window_material: StandardMaterial3D
+var time_override := -1.0
+var _light_elapsed := 0.0
+var daylight_factor := 1.0
 var planter: MeshInstance3D
 var pebbles: MultiMeshInstance3D
 var pot_id := ""
@@ -42,6 +50,7 @@ func put(mesh: Mesh, at: Vector3, mat: Material) -> MeshInstance3D:
 func _ready() -> void:
 	var world := WorldEnvironment.new()
 	var env := Environment.new()
+	room_environment = env
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color("e3dfd3")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
@@ -60,7 +69,7 @@ func _ready() -> void:
 	add_child(sun)
 	# One source of truth: rays travel from the visible window towards the tree.
 	sun.look_at(Vector3(0, 0.45, 0))
-	var fill := OmniLight3D.new()
+	fill = OmniLight3D.new()
 	fill.position = Vector3(2.4, 3.0, 3.0)
 	fill.light_color = Color("dbe6de")
 	fill.light_energy = 0.80
@@ -106,6 +115,41 @@ func _ready() -> void:
 	gravel_mat.vertex_color_use_as_albedo = true
 	pebbles.material_override = gravel_mat
 	add_child(pebbles)
+	update_local_time()
+
+func _process(delta: float) -> void:
+	_light_elapsed += delta
+	if _light_elapsed >= 1.0:
+		_light_elapsed = 0
+		update_local_time()
+
+func update_local_time() -> void:
+	var local := Time.get_time_dict_from_system()
+	var hour := time_override if time_override >= 0 else float(local.hour) + float(local.minute) / 60.0 + float(local.second) / 3600.0
+	set_hour(hour)
+
+# Artistic local day, 06:00–18:00. Visual light is independent of biological time.
+func set_hour(hour: float) -> void:
+	var phase := (fposmod(hour, 24.0) - 6.0) / 12.0
+	var daylight := sin(clampf(phase, 0, 1) * PI)
+	var day := smoothstep(0.0, 0.22, daylight)
+	daylight_factor = day
+	var warm := 1.0 - smoothstep(0.15, 0.8, daylight)
+	# Rays always enter through the rear opening; lateral sweep moves the lattice
+	# and tree shadows. The wall masks direct sunlight outside the opening.
+	var target := Vector3(lerpf(1.2, -1.2, clampf(phase, 0, 1)), 0.45 - daylight * 0.9, 0)
+	sun.look_at(target)
+	sun.light_energy = 1.15 * daylight
+	sun.light_color = Color("fff4df").lerp(Color("ffb86f"), warm)
+	room_environment.ambient_light_color = Color("8e9cb9").lerp(Color("e3e8e4"), day)
+	room_environment.ambient_light_energy = lerpf(0.36, 0.72, day)
+	room_environment.background_color = Color("32394b").lerp(Color("e3dfd3"), day)
+	# The existing room lamp becomes warm at night, keeping care readable.
+	fill.light_color = Color("ffd6a0").lerp(Color("dbe6de"), day)
+	fill.light_energy = lerpf(1.65, 0.65, day)
+	if window_material != null:
+		window_material.albedo_color = Color("202c49").lerp(Color("e2eee5"), day)
+	daylight_changed.emit(day)
 
 func _build_room(wood: Material) -> void:
 	var plaster := material(Color("d2c9b9"))
@@ -134,6 +178,7 @@ func _build_room(wood: Material) -> void:
 	box(Vector3(WINDOW_CENTER.x, low - 0.03, -7.67), Vector3(WINDOW_SIZE.x + 0.38, 0.14, 0.6), oak)
 	# Soft frosted glazing glows, while the timber lattice throws real shadows.
 	var glass := material(Color("e2eee5"))
+	window_material = glass
 	glass.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var pane := box(WINDOW_CENTER + Vector3(0, 0, -0.14), Vector3(WINDOW_SIZE.x, WINDOW_SIZE.y, 0.025), glass)
 	pane.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

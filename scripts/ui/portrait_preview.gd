@@ -16,6 +16,9 @@ func _ready() -> void:
 	viewport.add_child(stage)
 	var studio := BonsaiStudio.new()
 	stage.add_child(studio)
+	studio.time_override = 12.0
+	studio.update_local_time()
+	studio.set_process(false)
 	studio.sun.shadow_enabled = false
 	var state := BonsaiTree.from_data(portrait)
 	studio.set_pot(state.pot_id)

@@ -354,8 +354,8 @@ msgstr "הוספת שבוע"
 msgid "+1 month"
 msgstr "הוספת חודש"
 
-msgid "Time buttons advance BIOLOGICAL time.\nNormal rate: 1 real hour = 1 biological day."
-msgstr "הכפתורים מקדמים את הזמן הביולוגי של העץ.\nבקצב הרגיל: שעה אמיתית = יום בחיי העץ."
+msgid "Time buttons advance BIOLOGICAL time.\nNormal rate: 3 real hours = 1 biological day."
+msgstr "הכפתורים מקדמים את הזמן הביולוגי של העץ.\nבקצב הרגיל: 3 שעות אמיתיות = יום בחיי העץ."
 
 msgid "Soil moisture"
 msgstr "לחות האדמה"
@@ -482,3 +482,33 @@ msgstr "מקטע מהענף"
 
 msgid "Compare portrait"
 msgstr "השוואה לעץ של היום"
+
+msgid "Collection"
+msgstr "האוסף שלי"
+
+msgid "All your trees keep growing between visits."
+msgstr "כל העצים שלך ממשיכים לגדול גם כשמטפלים בעץ אחר."
+
+msgid "Tree %d"
+msgstr "עץ %d"
+
+msgid "Day %d · %d leaves"
+msgstr "יום %d · %d עלים"
+
+msgid "Current tree"
+msgstr "העץ הנוכחי"
+
+msgid "Care for this tree"
+msgstr "לטפל בעץ הזה"
+
+msgid "Olive"
+msgstr "זית"
+
+msgid "Weeping willow"
+msgstr "ערבה בוכייה"
+
+msgid "Narrow silver-green leaves and a sturdy trunk. Grows slowly and prefers drier soil."
+msgstr "עלים צרים בגוון ירוק כסוף וגזע עבה. צומח לאט ומעדיף אדמה יבשה יותר."
+
+msgid "Long slender leaves and cascading branches. Grows quickly and needs more water."
+msgstr "עלים ארוכים וצרים וענפים משתפלים. צומחת מהר וזקוקה ליותר מים."

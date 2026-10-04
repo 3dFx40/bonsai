@@ -29,7 +29,7 @@ func _ready() -> void:
 	for entry in [["+1 hour", 1.0 / 24], ["+1 day", 1.0], ["+1 week", 7.0], ["+1 month", 30.0]]:
 		_button(times, entry[0], "time", entry[1])
 	var note := Label.new()
-	note.text = "Time buttons advance BIOLOGICAL time.\nNormal rate: 1 real hour = 1 biological day."
+	note.text = "Time buttons advance BIOLOGICAL time.\nNormal rate: 3 real hours = 1 biological day."
 	note.add_theme_font_size_override("font_size", 18)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(note)

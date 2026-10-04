@@ -20,3 +20,11 @@ extends Resource
 @export var seasonality := 0.0
 @export var stress_tolerance := 0.75
 @export var leaf_lifespan_days := 120.0
+@export var leaf_shape := "oval"
+@export var leaf_scale := Vector3.ONE
+@export var leaf_color := Color("29452b")
+@export var bark_color := Color("857760")
+@export var initial_length_scale := 1.0
+@export var initial_thickness_scale := 1.0
+@export var initial_bend_scale := 1.0
+@export var branch_vertical_bias := 0.0

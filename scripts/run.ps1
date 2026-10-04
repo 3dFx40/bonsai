@@ -26,6 +26,8 @@ if ($Test) {
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
     & $Godot --headless --path $projectDir --script res://tests/creation_test.gd
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
+    & $Godot --headless --path $projectDir --script res://tests/grove_test.gd
+    if ($LASTEXITCODE) { exit $LASTEXITCODE }
     & $Godot --headless --path $projectDir --quit-after 10 -- --smoke
 } elseif ($Editor) {
     & $Godot --path $projectDir --editor
