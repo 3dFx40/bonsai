@@ -12,7 +12,7 @@ var sound: BonsaiSound
 var orbit: BonsaiCamera
 var hud: BonsaiHUD
 var debug_panel: BonsaiDebugPanel
-var settings := {"sound": false, "quality": "Medium", "real_seconds_per_day": 10800.0}
+var settings := {"sound": false, "quality": "Medium", "real_seconds_per_day": 14400.0}
 var mode := "inspect"
 var last_wall := 0.0
 var last_tick := 0
@@ -41,7 +41,7 @@ func _ready() -> void:
 	platform.resumed.connect(_resume)
 	platform.quit_requested.connect(_quit)
 	platform.back_requested.connect(_back)
-	settings.real_seconds_per_day = clampf(ProjectSettings.get_setting("bonsai/real_seconds_per_day", 10800), 60, 86400)
+	settings.real_seconds_per_day = clampf(ProjectSettings.get_setting("bonsai/real_seconds_per_day", 14400), 60, 86400)
 	if automation:
 		saves.path = "user://automation-grove.json"
 	var loaded := {} if automation else saves.load_document()

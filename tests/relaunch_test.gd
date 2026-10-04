@@ -25,7 +25,7 @@ func run() -> void:
 	await process_frame
 	check(first.tree.id == tree.id, "Reopened app must load same tree")
 	check(not first.tree.branches.has(3), "Reopened app must preserve cut")
-	check(first.settings.real_seconds_per_day == 10800, "Legacy default upgrades to three real hours per day")
+	check(first.settings.real_seconds_per_day == 14400, "Legacy default upgrades to four real hours per day")
 	check(first.tree.age_days >= 0.25 and first.tree.age_days < 0.5, "Reopened app processes one hour offline at the new rate")
 	check(first.settings.sound and first.settings.quality == "Low", "Reopened app must restore player settings")
 	check(first.settings.language in ["en", "he"], "Legacy saves must receive a supported language")

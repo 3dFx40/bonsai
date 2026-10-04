@@ -354,8 +354,8 @@ msgstr "הוספת שבוע"
 msgid "+1 month"
 msgstr "הוספת חודש"
 
-msgid "Time buttons advance BIOLOGICAL time.\nNormal rate: 3 real hours = 1 biological day."
-msgstr "הכפתורים מקדמים את הזמן הביולוגי של העץ.\nבקצב הרגיל: 3 שעות אמיתיות = יום בחיי העץ."
+msgid "Time buttons advance BIOLOGICAL time.\nNormal rate: 4 real hours = 1 biological day."
+msgstr "הכפתורים מקדמים את הזמן הביולוגי של העץ.\nבקצב הרגיל: 4 שעות אמיתיות = יום בחיי העץ."
 
 msgid "Soil moisture"
 msgstr "לחות האדמה"

@@ -1,7 +1,7 @@
 class_name BonsaiClock
 extends RefCounted
 
-const DEFAULT_SECONDS_PER_DAY := 10800.0
+const DEFAULT_SECONDS_PER_DAY := 14400.0
 var real_seconds_per_day := DEFAULT_SECONDS_PER_DAY
 var pending_days := 0.0
 var paused := false
@@ -17,8 +17,11 @@ func advance_grove(trees: Array, active: BonsaiTree, seconds: float, offline := 
 	return result
 
 static func upgrade_rate(settings: Dictionary) -> void:
-	if is_equal_approx(float(settings.get("real_seconds_per_day", 3600)), 3600):
-		settings.real_seconds_per_day = DEFAULT_SECONDS_PER_DAY
+	var saved_rate := float(settings.get("real_seconds_per_day", DEFAULT_SECONDS_PER_DAY))
+	for legacy_rate in [3600.0, 10800.0]:
+		if is_equal_approx(saved_rate, legacy_rate):
+			settings.real_seconds_per_day = DEFAULT_SECONDS_PER_DAY
+			return
 
 func advance(tree: BonsaiTree, simulation: BonsaiSimulation, seconds: float, _offline := false) -> Dictionary:
 	if paused or seconds <= 0 or not is_finite(seconds):

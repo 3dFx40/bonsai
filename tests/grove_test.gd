@@ -32,7 +32,7 @@ func run() -> void:
 	var willow_length: float = willow.branches[11].length
 	var previous_pending: float = game.clock.pending_days
 	var result: Dictionary = game.clock.advance_grove(game.trees, willow, 8 * 3600, true)
-	check(is_equal_approx(result.days + game.clock.pending_days - previous_pending, 8.0 / 3.0), "Eight hours equal 2.67 biological days including remainder")
+	check(is_equal_approx(result.days + game.clock.pending_days - previous_pending, 2.0), "Eight hours equal two biological days including remainder")
 	check(is_equal_approx(olive.age_days, willow.age_days), "Inactive trees age alongside the active tree")
 	check(olive.moisture > willow.moisture, "Willow consumes noticeably more water than olive")
 	check(willow.branches[11].length - willow_length > olive.branches[11].length - olive_length, "Willow grows faster than olive")
@@ -70,16 +70,24 @@ func run() -> void:
 	check(is_equal_approx(game.tree.age_days, age) and absf(game.clock.pending_days - pending) < 0.01, "Reopening does not repeat simulation or lose partial time")
 	# Incoming backups advance the whole grove at the migrated default rate.
 	game.pending_restore = game.saves.load_document()
-	game.pending_restore.settings.real_seconds_per_day = 3600
-	game.pending_restore.last_real_timestamp -= 10800
+	game.pending_restore.settings.real_seconds_per_day = 10800
+	game.pending_restore.last_real_timestamp -= 14400
 	game._restore_backup()
-	check(game.clock.real_seconds_per_day == 10800, "Imported legacy saves adopt the new default")
+	check(game.clock.real_seconds_per_day == 14400, "Imported three-hour saves adopt the new default")
 	for specimen: BonsaiTree in game.trees:
 		check(specimen.age_days >= age + 1, "Every imported tree receives offline time")
 	# Rate migration preserves explicitly customized pacing.
 	var custom := {"real_seconds_per_day": 7200.0}
 	BonsaiClock.upgrade_rate(custom)
 	check(custom.real_seconds_per_day == 7200, "Customized time rates remain intact")
+	for old_rate in [3600.0, 10800.0, 14400.0]:
+		var historical: Dictionary = game.saves.load_document()
+		historical.settings.real_seconds_per_day = old_rate
+		var original_trees: Array = historical.trees.duplicate(true)
+		var original_pending: float = historical.pending_days
+		BonsaiClock.upgrade_rate(historical.settings)
+		check(historical.settings.real_seconds_per_day == 14400, "Both legacy defaults upgrade; current rate stays unchanged")
+		check(historical.trees == original_trees and historical.pending_days == original_pending, "Changing rate preserves accumulated age, partial time and tree state")
 	var daylight = game.studio
 	daylight.time_override = 8
 	daylight.update_local_time()

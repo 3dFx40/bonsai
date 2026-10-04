@@ -156,7 +156,7 @@ func run() -> void:
 	check(orbit.fingers.is_empty() and not orbit.mouse_down, "Naming must not start a camera gesture")
 	var before: Dictionary = game.tree.to_data()
 	game._suspend()
-	game.last_wall -= 10800
+	game.last_wall -= 14400
 	game._resume()
 	check(game.tree.age_days >= float(before.age_days) + 1, "Resume must simulate elapsed wall time")
 	print("Touch/lifecycle tests: %d failures" % failures)
